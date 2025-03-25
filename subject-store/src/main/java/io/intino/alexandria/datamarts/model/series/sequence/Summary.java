@@ -1,6 +1,6 @@
-package io.intino.alexandria.model.series.sequence;
+package io.intino.alexandria.datamarts.model.series.sequence;
 
-import io.intino.alexandria.model.Point;
+import io.intino.alexandria.datamarts.model.Point;
 
 import java.util.*;
 
@@ -37,7 +37,7 @@ public class Summary {
 	}
 
 	public String mode() {
-		return count > 0 ? categories().get(0) : null;
+		return count > 0 ? categories().getFirst() : null;
 	}
 
 	public double entropy() {

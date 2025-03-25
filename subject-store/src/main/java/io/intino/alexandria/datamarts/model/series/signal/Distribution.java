@@ -1,14 +1,14 @@
-package io.intino.alexandria.model.series.signal;
+package io.intino.alexandria.datamarts.model.series.signal;
 
 import com.tdunning.math.stats.TDigest;
-import io.intino.alexandria.model.Point;
+import io.intino.alexandria.datamarts.model.Point;
 
 public class Distribution {
 	private final TDigest tdigest;
 
-	public static Distribution of(Iterable<Point<Long>> points) {
+	public static Distribution of(Iterable<Point<Double>> points) {
 		Distribution distribution = new Distribution();
-		for (Point<Long> point : points)
+		for (Point<Double> point : points)
 			distribution.tdigest.add(point.value());
 		distribution.tdigest.compress();
 		return distribution;

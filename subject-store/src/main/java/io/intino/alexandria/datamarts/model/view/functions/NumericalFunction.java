@@ -1,7 +1,7 @@
-package io.intino.alexandria.model.table.operators;
+package io.intino.alexandria.datamarts.model.view.functions;
 
-import io.intino.alexandria.model.Series;
-import io.intino.alexandria.model.series.Signal;
+import io.intino.alexandria.datamarts.model.Series;
+import io.intino.alexandria.datamarts.model.series.Signal;
 
 import java.util.function.Function;
 

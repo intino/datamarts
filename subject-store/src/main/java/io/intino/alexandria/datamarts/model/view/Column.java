@@ -1,16 +1,16 @@
-package io.intino.alexandria.model.table;
+package io.intino.alexandria.datamarts.model.view;
 
-import io.intino.alexandria.model.series.Sequence;
-import io.intino.alexandria.model.series.Signal;
-import io.intino.alexandria.model.table.operators.CategoricalFunction;
-import io.intino.alexandria.model.table.operators.NumericalFunction;
-import io.intino.alexandria.model.table.operators.TemporalFunction;
+import io.intino.alexandria.datamarts.model.series.Sequence;
+import io.intino.alexandria.datamarts.model.series.Signal;
+import io.intino.alexandria.datamarts.model.view.functions.CategoricalFunction;
+import io.intino.alexandria.datamarts.model.view.functions.NumericalFunction;
+import io.intino.alexandria.datamarts.model.view.functions.TemporalFunction;
 
 public interface Column {
 	String name();
 	Type type();
 
-	record Temporal(TemporalFunction operator) implements Column {
+	record Temporal(TemporalFunction function) implements Column {
 		@Override
 		public String name() {
 			return "";
@@ -24,7 +24,6 @@ public interface Column {
 	}
 
 	record Numerical(String name, NumericalFunction function) implements Column {
-
 		@Override
 		public Type type() {
 			return Type.Numerical;
@@ -37,7 +36,6 @@ public interface Column {
 	}
 
 	record Categorical(String name, CategoricalFunction function) implements Column {
-
 		@Override
 		public Type type() {
 			return Type.Categorical;

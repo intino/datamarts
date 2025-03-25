@@ -1,22 +1,22 @@
-package io.intino.alexandria.model.series.signal;
+package io.intino.alexandria.datamarts.model.series.signal;
 
-import io.intino.alexandria.model.Point;
+import io.intino.alexandria.datamarts.model.Point;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 
 public class Summary {
-	private final long sum;
 	private final int count;
+	private final double sum;
 	private final double mean;
 	private final double sd;
-	private final Point<Long> first;
-	private final Point<Long> last;
-	private final Point<Long> min;
-	private final Point<Long> max;
+	private final Point<Double> first;
+	private final Point<Double> last;
+	private final Point<Double> min;
+	private final Point<Double> max;
 
-	public static Summary of(Iterable<Point<Long>> points) {
+	public static Summary of(Iterable<Point<Double>> points) {
 		return new Summary(new Calculator().calculate(points));
 	}
 
@@ -31,32 +31,32 @@ public class Summary {
 		this.max = calculator.get("max");
 	}
 
-	public Point<Long> first() {
+	public Point<Double> first() {
 		return first;
 	}
 
-	public Point<Long> last() {
+	public Point<Double> last() {
 		return last;
 	}
 
-	public Point<Long> min() {
+	public Point<Double> min() {
 		return min;
 	}
 
-	public Point<Long> max() {
+	public Point<Double> max() {
 		return max;
 	}
 
-	public long range() {
+	public double range() {
 		return max.value() - min.value();
-	}
-
-	public long sum() {
-		return sum;
 	}
 
 	public int count() {
 		return count;
+	}
+
+	public double sum() {
+		return sum;
 	}
 
 	public double mean() {
@@ -81,10 +81,10 @@ public class Summary {
 
 
 	private static class Calculator {
-		final Map<String, Point<Long>> points;
-		long sum = 0;
-		long min = Long.MAX_VALUE;
-		long max = Long.MIN_VALUE;
+		final Map<String, Point<Double>> points;
+		double sum = 0;
+		double min = Double.MAX_VALUE;
+		double max = Double.MIN_VALUE;
 		int count = 0;
 		double mean = 0;
 		double m2 = 0;
@@ -93,14 +93,14 @@ public class Summary {
 			this.points = new HashMap<>();
 		}
 
-		private Calculator calculate(Iterable<Point<Long>> points) {
-			for (Point<Long> point : points)
+		private Calculator calculate(Iterable<Point<Double>> points) {
+			for (Point<Double> point : points)
 				calculate(point);
 			return this;
 		}
 
-		private void calculate(Point<Long> point) {
-			long value = point.value();
+		private void calculate(Point<Double> point) {
+			double value = point.value();
 			calculate(value);
 			if (!points.containsKey("first")) points.put("first", point);
 			if (min(value)) points.put("min", point);
@@ -108,7 +108,7 @@ public class Summary {
 			points.put("last", point);
 		}
 
-		private void calculate(long value) {
+		private void calculate(double value) {
 			double delta = value - mean;
 			count++;
 			sum += value;
@@ -116,13 +116,13 @@ public class Summary {
 			m2 += delta * (value - mean);
 		}
 
-		private boolean max(long value) {
+		private boolean max(double value) {
 			if (value <= max) return false;
 			max = value;
 			return true;
 		}
 
-		private boolean min(long value) {
+		private boolean min(double value) {
 			if (value >= min) return false;
 			min = value;
 			return true;
@@ -132,7 +132,7 @@ public class Summary {
 			return count > 1 ? Math.sqrt(m2 / (count - 1)) : Double.NaN;
 		}
 
-		public Point<Long> get(String name) {
+		public Point<Double> get(String name) {
 			return points.get(name);
 		}
 	}

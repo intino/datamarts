@@ -1,12 +1,12 @@
-package io.intino.alexandria;
+package io.intino.alexandria.datamarts;
 
-import io.intino.alexandria.io.Registry;
-import io.intino.alexandria.io.Transaction;
-import io.intino.alexandria.model.Instants;
-import io.intino.alexandria.model.Point;
-import io.intino.alexandria.io.registries.SqliteRegistry;
-import io.intino.alexandria.model.series.Sequence;
-import io.intino.alexandria.model.series.Signal;
+import io.intino.alexandria.datamarts.io.Registry;
+import io.intino.alexandria.datamarts.io.Transaction;
+import io.intino.alexandria.datamarts.model.TemporalReferences;
+import io.intino.alexandria.datamarts.model.Point;
+import io.intino.alexandria.datamarts.io.registries.SqliteRegistry;
+import io.intino.alexandria.datamarts.model.series.Sequence;
+import io.intino.alexandria.datamarts.model.series.Signal;
 
 import java.io.Closeable;
 import java.io.File;
@@ -14,8 +14,8 @@ import java.io.IOException;
 import java.time.Instant;
 import java.util.List;
 
-import static io.intino.alexandria.model.Instants.BigBang;
-import static io.intino.alexandria.model.Instants.Legacy;
+import static io.intino.alexandria.datamarts.model.TemporalReferences.BigBang;
+import static io.intino.alexandria.datamarts.model.TemporalReferences.Legacy;
 
 public class SubjectStore implements Closeable {
 	private final Registry registry;
@@ -32,12 +32,12 @@ public class SubjectStore implements Closeable {
 		return registry.feeds();
 	}
 
-	public Instant from() {
-		return registry.instants().get(0);
+	public Instant first() {
+		return registry.isEmpty() ? null : registry.instants().getFirst();
 	}
 
-	public Instant to() {
-		return registry.instants().get(feeds()-1);
+	public Instant last() {
+		return registry.isEmpty() ? null : registry.instants().getLast();
 	}
 
 	public boolean legacyExists() {
@@ -92,7 +92,7 @@ public class SubjectStore implements Closeable {
 			return new Sequence.Raw(from, to, registry.readTexts(tag, from, to));
 		}
 
-		public Sequence sequence(Instants.TimeSpan span) {
+		public Sequence sequence(TemporalReferences.TimeSpan span) {
 			return sequence(span.from(), span.to());
 		}
 
@@ -109,15 +109,15 @@ public class SubjectStore implements Closeable {
 			this.tag = tag;
 		}
 
-		public Point<Long> current() {
-			return registry.readLong(tag);
+		public Point<Double> current() {
+			return registry.readNumber(tag);
 		}
 
 		public Signal signal(Instant from, Instant to) {
-			return new Signal.Raw(from, to, registry.readLongs(tag, from, to));
+			return new Signal.Raw(from, to, registry.readNumbers(tag, from, to));
 		}
 
-		public Signal signal(Instants.TimeSpan span) {
+		public Signal signal(TemporalReferences.TimeSpan span) {
 			return signal(span.from(), span.to());
 		}
 
@@ -140,7 +140,7 @@ public class SubjectStore implements Closeable {
 			}
 
 			@Override
-			public Feed add(String tag, long value) {
+			public Feed add(String tag, double value) {
 				transaction.put(tag, value);
 				return this;
 			}
@@ -153,7 +153,7 @@ public class SubjectStore implements Closeable {
 	}
 
 	public interface Feed {
-		Feed add(String name, long value);
+		Feed add(String name, double value);
 		Feed add(String name, String value);
 		void execute();
 	}

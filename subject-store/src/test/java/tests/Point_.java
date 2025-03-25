@@ -1,12 +1,13 @@
 package tests;
 
-import io.intino.alexandria.model.Point;
+import io.intino.alexandria.datamarts.model.Point;
 import org.junit.Test;
 
 import java.time.Instant;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+@SuppressWarnings("NewClassNamingConvention")
 public class Point_ {
 	@Test
 	public void should_generate_name() {

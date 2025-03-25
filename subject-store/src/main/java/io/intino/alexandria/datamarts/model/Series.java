@@ -1,4 +1,4 @@
-package io.intino.alexandria.model;
+package io.intino.alexandria.datamarts.model;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -77,7 +77,7 @@ public interface Series<T> extends Iterable<Point<T>> {
 	abstract class Segment<X> implements Series<X> {
 		private final Instant from;
 		private final Instant to;
-		private final Series<X> parent;
+		protected final Series<X> parent;
 
 		public Segment(Instant from, Instant to, Series<X> parent) {
 			this.from = from;

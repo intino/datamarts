@@ -1,17 +1,17 @@
-package io.intino.alexandria.io.registries;
+package io.intino.alexandria.datamarts.io.registries;
 
-import io.intino.alexandria.io.Registry;
-import io.intino.alexandria.io.Transaction;
-import io.intino.alexandria.model.Point;
-import io.intino.alexandria.SubjectStore.RegistryException;
+import io.intino.alexandria.datamarts.io.Registry;
+import io.intino.alexandria.datamarts.io.Transaction;
+import io.intino.alexandria.datamarts.model.Point;
+import io.intino.alexandria.datamarts.SubjectStore.RegistryException;
 
 import java.io.File;
 import java.sql.*;
 import java.time.Instant;
 import java.util.*;
 
-import static io.intino.alexandria.model.Instants.BigBang;
-import static io.intino.alexandria.model.Instants.Legacy;
+import static io.intino.alexandria.datamarts.model.TemporalReferences.BigBang;
+import static io.intino.alexandria.datamarts.model.TemporalReferences.Legacy;
 import static java.sql.Types.*;
 import static java.util.Comparator.comparingInt;
 
@@ -73,18 +73,18 @@ public class SqliteRegistry implements Registry {
 	}
 
 	@Override
-	public Point<Long> readLong(String tag) {
+	public Point<Double> readNumber(String tag) {
 		try {
-			return tagSet.contains(tag) ? readLong(tagSet.get(tag)) : null;
+			return tagSet.contains(tag) ? readDouble(tagSet.get(tag)) : null;
 		} catch (SQLException e) {
 			throw new RegistryException(e);
 		}
 	}
 
 	@Override
-	public List<Point<Long>> readLongs(String tag, Instant from, Instant to) {
+	public List<Point<Double>> readNumbers(String tag, Instant from, Instant to) {
 		try {
-			return tagSet.contains(tag) ? readLongs(tagSet.get(tag), timeline.from(from), timeline.to(to)) : List.of();
+			return tagSet.contains(tag) ? readDoubles(tagSet.get(tag), timeline.from(from), timeline.to(to)) : List.of();
 		} catch (SQLException e) {
 			throw new RegistryException(e);
 		}
@@ -108,23 +108,23 @@ public class SqliteRegistry implements Registry {
 		}
 	}
 
-	private List<Point<Long>> readLongs(int tag, int from, int to) throws SQLException {
-		List<Point<Long>> timeEntries = new ArrayList<>();
-		try (ResultSet rs = selectLongValues(tag, from, to)) {
+	private List<Point<Double>> readDoubles(int tag, int from, int to) throws SQLException {
+		List<Point<Double>> timeEntries = new ArrayList<>();
+		try (ResultSet rs = selectDoubleValues(tag, from, to)) {
 			while (rs.next()) {
 				int feed = rs.getInt(1);
-				timeEntries.add(new Point<>(feed, timeline.get(feed), rs.getLong(2)));
+				timeEntries.add(new Point<>(feed, timeline.get(feed), rs.getDouble(2)));
 			}
 		}
 		return timeEntries;
 	}
 
-	private Point<Long> readLong(int tag) throws SQLException {
+	private Point<Double> readDouble(int tag) throws SQLException {
 		int feed = tagSet.lastUpdatingFeedOf(tag);
 		return feed < 0 ? null : new Point<>(
 				feed,
 				timeline.get(feed),
-				readLong(tag, feed)
+				readDouble(tag, feed)
 		);
 	}
 
@@ -183,12 +183,12 @@ public class SqliteRegistry implements Registry {
 	private static final int FEEDS = -1;
 
 	private int readFeedCount() throws SQLException {
-		return (int) readLong(FEEDS, FEEDS);
+		return (int) readDouble(FEEDS, FEEDS);
 	}
 
-	private long readLong(int tag, int feed) throws SQLException {
-		try (ResultSet select = selectLongValue(tag, feed)) {
-			return select.getLong(1);
+	private double readDouble(int tag, int feed) throws SQLException {
+		try (ResultSet select = selectDoubleValue(tag, feed)) {
+			return select.getDouble(1);
 		}
 	}
 
@@ -200,14 +200,14 @@ public class SqliteRegistry implements Registry {
 
 	private void insertEntry(String tag, Object o) throws SQLException {
 		switch (type(o)) {
-			case BIGINT -> insertEntry(tagSet.get(tag), ((Number) o).longValue());
+			case NUMERIC -> insertEntry(tagSet.get(tag), ((Number) o).doubleValue());
 			case DATE -> insertEntry(tagSet.get(tag), ((Instant) o));
 			case VARCHAR -> insertEntry(tagSet.get(tag), o.toString());
 		}
 	}
 
 	private int type(Object o) {
-		if (o instanceof Number) return BIGINT;
+		if (o instanceof Number) return NUMERIC;
 		if (o instanceof Instant) return DATE;
 		return VARCHAR;
 	}
@@ -220,8 +220,8 @@ public class SqliteRegistry implements Registry {
 		return statementProvider.get("select-instants").executeQuery();
 	}
 
-	private ResultSet selectLongValue(int tag, int feed) throws SQLException {
-		PreparedStatement statement = statementProvider.get("select-long-value");
+	private ResultSet selectDoubleValue(int tag, int feed) throws SQLException {
+		PreparedStatement statement = statementProvider.get("select-double-value");
 		statement.setInt(1, tag);
 		statement.setInt(2, feed);
 		return statement.executeQuery();
@@ -234,8 +234,8 @@ public class SqliteRegistry implements Registry {
 		return statement.executeQuery();
 	}
 
-	private ResultSet selectLongValues(int tag, int from, int to) throws SQLException {
-		PreparedStatement statement = statementProvider.get("select-long-values");
+	private ResultSet selectDoubleValues(int tag, int from, int to) throws SQLException {
+		PreparedStatement statement = statementProvider.get("select-double-values");
 		statement.setInt(1, tag);
 		statement.setInt(2, from);
 		statement.setInt(3, to);
@@ -252,7 +252,7 @@ public class SqliteRegistry implements Registry {
 
 	private void updateFeed() throws SQLException {
 		PreparedStatement statement = statementProvider.get("update-feed");
-		statement.setLong(1, ++feeds);
+		statement.setInt(1, ++feeds);
 		statement.execute();
 	}
 
@@ -266,17 +266,17 @@ public class SqliteRegistry implements Registry {
 	private void insertEntry(int tag, Instant value) throws SQLException {
 		PreparedStatement statement = statementProvider.get("insert-entry");
 		statement.setInt(1, tag);
-		statement.setLong(2, feeds);
+		statement.setInt(2, feeds);
 		statement.setLong(3, value.toEpochMilli());
 		statement.setString(4, labelOf(value));
 		statement.execute();
 	}
 
-	private void insertEntry(int tag, long value) throws SQLException {
+	private void insertEntry(int tag, double value) throws SQLException {
 		PreparedStatement statement = statementProvider.get("insert-entry");
 		statement.setInt(1, tag);
-		statement.setLong(2, feeds);
-		statement.setLong(3, value);
+		statement.setInt(2, feeds);
+		statement.setDouble(3, value);
 		statement.setNull(4, VARCHAR);
 		statement.execute();
 	}
@@ -284,7 +284,7 @@ public class SqliteRegistry implements Registry {
 	private void insertEntry(int tag, String value) throws SQLException {
 		PreparedStatement statement = statementProvider.get("insert-entry");
 		statement.setInt(1, tag);
-		statement.setLong(2, feeds);
+		statement.setInt(2, feeds);
 		statement.setNull(3, BIGINT);
 		statement.setString(4, value);
 		statement.execute();
@@ -333,7 +333,7 @@ public class SqliteRegistry implements Registry {
 					CREATE TABLE map (
 						tag INTEGER NOT NULL,
 						feed INTEGER NOT NULL,
-						num BIGINT,
+						num REAL,
 						txt TEXT,
 						PRIMARY KEY (tag, feed)
 					);
@@ -374,8 +374,8 @@ public class SqliteRegistry implements Registry {
 			statements.put("update-feed", create("UPDATE map SET num = ? WHERE tag = -1 AND feed = -1;"));
 			statements.put("select-tags", create("SELECT tag, label, feed FROM tags"));
 			statements.put("select-instants", create("SELECT feed, num FROM map WHERE tag = 0"));
-			statements.put("select-long-value", create("SELECT num FROM map WHERE tag = ? AND feed = ?"));
-			statements.put("select-long-values", create("SELECT feed, num FROM map WHERE tag = ? and feed BETWEEN ? AND ?"));
+			statements.put("select-double-value", create("SELECT num FROM map WHERE tag = ? AND feed = ?"));
+			statements.put("select-double-values", create("SELECT feed, num FROM map WHERE tag = ? and feed BETWEEN ? AND ?"));
 			statements.put("select-text-value", create("SELECT txt FROM map WHERE tag = ? AND feed = ?"));
 			statements.put("select-text-values", create("SELECT feed, txt FROM map WHERE tag = ? and feed BETWEEN ? AND ?"));
 			return statements;

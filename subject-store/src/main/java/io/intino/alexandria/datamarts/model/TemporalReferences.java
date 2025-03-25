@@ -1,15 +1,18 @@
-package io.intino.alexandria.model;
+package io.intino.alexandria.datamarts.model;
 
 import java.time.Instant;
 import java.time.ZonedDateTime;
+import java.time.temporal.TemporalAmount;
+import java.time.temporal.TemporalUnit;
+import java.util.stream.Stream;
 
 import static java.time.DayOfWeek.MONDAY;
 import static java.time.ZoneOffset.UTC;
 import static java.time.temporal.ChronoUnit.*;
 
-public class Instants {
-	public static final Instant Legacy = Instant.ofEpochMilli(-6666666666666666666L);
-	public static final Instant BigBang = Instant.ofEpochMilli(-1111111111111111111L);
+public class TemporalReferences {
+	public static final Instant Legacy = java.time.Instant.ofEpochMilli(-60000000000000000L);
+	public static final Instant BigBang = java.time.Instant.ofEpochMilli(-10000000000000000L);
 
 	public static Instant thisYear() {
 		return toInstant(ZonedDateTime.now(UTC).withMonth(1).withDayOfMonth(1));
@@ -28,7 +31,7 @@ public class Instants {
 	}
 
 	public static Instant today() {
-		return Instant.now().truncatedTo(DAYS);
+		return java.time.Instant.now().truncatedTo(DAYS);
 	}
 
 	public static Instant today(long value) {
@@ -36,7 +39,7 @@ public class Instants {
 	}
 
 	public static Instant thisHour() {
-		return Instant.now().truncatedTo(HOURS);
+		return java.time.Instant.now().truncatedTo(HOURS);
 	}
 
 	public static Instant thisHour(long value) {
@@ -44,7 +47,7 @@ public class Instants {
 	}
 
 	public static Instant thisMinute() {
-		return Instant.now().truncatedTo(MINUTES);
+		return java.time.Instant.now().truncatedTo(MINUTES);
 	}
 
 	public static Instant thisMinute(long value) {
@@ -52,7 +55,7 @@ public class Instants {
 	}
 
 	public static Instant thisSecond() {
-		return Instant.now().truncatedTo(MINUTES);
+		return java.time.Instant.now().truncatedTo(MINUTES);
 	}
 
 	public static Instant thisSecond(long value) {
@@ -63,14 +66,32 @@ public class Instants {
 		return dateTime.truncatedTo(DAYS).toInstant();
 	}
 
+	public static Stream<Instant> iterate(Instant from, Instant to, TemporalAmount duration) {
+		return Stream.iterate(
+				from,
+				instant -> instant.isBefore(to),
+				instant -> add(instant, duration)
+		);
+	}
+
+	public static Instant add(Instant instant, TemporalAmount duration) {
+		return isFixed(duration) ?
+				instant.plus(duration) :
+				instant.atZone(UTC).plus(duration).toInstant();
+	}
+
+	private static boolean isFixed(TemporalAmount duration) {
+		return duration.getUnits().stream()
+				.noneMatch(TemporalUnit::isDateBased);
+	}
+
 	public enum TimeSpan {
-		Full, LegacyPhase, BigBangPhase,
+		LegacyPhase, BigBangPhase,
 		ThisYear, ThisMonth, ThisWeek, Today, ThisHour, ThisMinute, ThisSecond,
 		LastYearWindow, LastMonthWindow, LastWeekWindow, LastDayWindow, LastHourWindow, LasMinuteWindow, LasSecondWindow;
 
 		public Instant from() {
 			return switch (this) {
-				case Full -> Instant.MIN;
 				case LegacyPhase -> Legacy;
 				case BigBangPhase -> BigBang;
 				case ThisYear -> thisYear();
@@ -93,7 +114,6 @@ public class Instants {
 
 		public Instant to() {
 			return switch (this) {
-				case Full -> Instant.MAX;
 				case LegacyPhase -> Legacy.plus(1, SECONDS);
 				case BigBangPhase -> BigBang.plus(1, SECONDS);
 				case ThisYear -> thisYear().plus(365, DAYS);

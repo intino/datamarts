@@ -1,26 +1,27 @@
-package io.intino.alexandria;
+package io.intino.alexandria.datamarts;
 
-import io.intino.alexandria.model.table.Column.Categorical;
-import io.intino.alexandria.model.table.Column.Numerical;
-import io.intino.alexandria.model.table.Column.Temporal;
-import io.intino.alexandria.model.table.Format;
-import io.intino.alexandria.model.table.Column;
-import io.intino.alexandria.model.series.Sequence;
-import io.intino.alexandria.model.series.Signal;
+import io.intino.alexandria.datamarts.model.TemporalReferences;
+import io.intino.alexandria.datamarts.model.view.Column.Categorical;
+import io.intino.alexandria.datamarts.model.view.Column.Numerical;
+import io.intino.alexandria.datamarts.model.view.Format;
+import io.intino.alexandria.datamarts.model.view.Column;
+import io.intino.alexandria.datamarts.model.series.Sequence;
+import io.intino.alexandria.datamarts.model.series.Signal;
 
 import java.io.*;
 import java.time.*;
+import java.time.temporal.TemporalAmount;
 import java.util.*;
 import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.joining;
 
-public class SubjectTable implements Iterable<SubjectTable.Row> {
+public class SubjectView implements Iterable<SubjectView.Row> {
 	private final Format format;
 	private final Row[] rows;
 	private final SubjectStore store;
 
-	public SubjectTable(SubjectStore store, Format format) {
+	public SubjectView(SubjectStore store, Format format) {
 		this.store = store;
 		this.format = format;
 		this.rows = createRows();
@@ -39,7 +40,7 @@ public class SubjectTable implements Iterable<SubjectTable.Row> {
 		return format.to();
 	}
 
-	public Duration duration() {
+	public TemporalAmount duration() {
 		return format.duration();
 	}
 
@@ -65,15 +66,15 @@ public class SubjectTable implements Iterable<SubjectTable.Row> {
 
 	private void build(Column column) {
 		switch (column.type()) {
-			case Temporal -> build((Temporal) column);
+			case Temporal -> build((Column.Temporal) column);
 			case Numerical -> build((Numerical) column);
 			case Categorical -> build((Categorical) column);
 		}
 	}
 
-	private void build(Temporal column) {
+	private void build(Column.Temporal column) {
 		for (Row row : rows)
-			row.add(column.operator().apply(row.instant));
+			row.add(column.function().apply(row.instant));
 	}
 
 	private void build(Numerical column) {
@@ -119,11 +120,7 @@ public class SubjectTable implements Iterable<SubjectTable.Row> {
 	}
 
 	private Stream<Instant> instants() {
-		return Stream.iterate(
-				format.from(),
-				instant -> instant.isBefore(format.to()),
-				instant -> instant.plus(format.duration())
-		);
+		return TemporalReferences.iterate(format.from(), format.to(), format.duration());
 	}
 
 	@Override
@@ -136,7 +133,7 @@ public class SubjectTable implements Iterable<SubjectTable.Row> {
 		return Arrays.asList(rows).iterator();
 	}
 
-	public SubjectTable normalize(int column) {
+	public SubjectView normalize(int column) {
 		normalize(column, rangeOf(column));
 		return this;
 	}

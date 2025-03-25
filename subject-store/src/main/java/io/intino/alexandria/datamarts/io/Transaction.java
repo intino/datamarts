@@ -1,11 +1,11 @@
-package io.intino.alexandria.io;
+package io.intino.alexandria.datamarts.io;
 
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
-import static io.intino.alexandria.model.Instants.Legacy;
+import static io.intino.alexandria.datamarts.model.TemporalReferences.Legacy;
 
 public final class Transaction {
 	public final Instant instant;

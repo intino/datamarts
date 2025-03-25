@@ -1,24 +1,25 @@
-package io.intino.alexandria.model.series;
+package io.intino.alexandria.datamarts.model.series;
 
-import io.intino.alexandria.model.Point;
-import io.intino.alexandria.model.Series;
-import io.intino.alexandria.model.series.sequence.Summary;
+import io.intino.alexandria.datamarts.model.TemporalReferences;
+import io.intino.alexandria.datamarts.model.Point;
+import io.intino.alexandria.datamarts.model.Series;
+import io.intino.alexandria.datamarts.model.series.sequence.Summary;
 
-import java.time.Duration;
 import java.time.Instant;
+import java.time.temporal.TemporalAmount;
 import java.util.List;
-import java.util.stream.Stream;
+
+import static io.intino.alexandria.datamarts.model.TemporalReferences.iterate;
 
 public interface Sequence extends Series<String> {
 	default String[] values() { return stream().map(Point::value).toArray(String[]::new); }
-	default Sequence[] segments(Duration duration) { return splitBy(from(), to(), duration); }
+	default Sequence[] segments(TemporalAmount duration) { return splitBy(from(), to(), duration); }
 	default Sequence[] segments(int number) { return segments(duration().dividedBy(number)); }
 	default Summary summary() { return Summary.of(this); }
 
-	private Segment[] splitBy(Instant from, Instant to, Duration duration) {
-		return Stream
-				.iterate(from, current -> current.isBefore(to), current -> current.plus(duration))
-				.map(current -> new Segment(current, current.plus(duration), this))
+	private Segment[] splitBy(Instant from, Instant to, TemporalAmount duration) {
+		return iterate(from, to, duration)
+				.map(current -> new Segment(current, TemporalReferences.add(current, duration), this))
 				.toArray(Segment[]::new);
 	}
 
@@ -29,15 +30,9 @@ public interface Sequence extends Series<String> {
 	}
 
 	final class Segment extends Series.Segment<String> implements Sequence {
-		private final Sequence parent;
 
 		public Segment(Instant from, Instant to, Sequence parent) {
 			super(from, to, parent);
-			this.parent = parent;
-		}
-
-		public Sequence parent() {
-			return parent;
 		}
 
 	}

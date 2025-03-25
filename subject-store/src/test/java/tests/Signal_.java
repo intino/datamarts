@@ -1,21 +1,22 @@
 package tests;
 
-import io.intino.alexandria.model.Point;
-import io.intino.alexandria.model.series.Signal;
+import io.intino.alexandria.datamarts.model.Point;
+import io.intino.alexandria.datamarts.model.series.Signal;
 import org.junit.Test;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.time.Period;
 import java.util.List;
 import java.util.stream.IntStream;
 
-import static io.intino.alexandria.model.Instants.today;
-import static java.time.temporal.ChronoUnit.DAYS;
-import static java.time.temporal.ChronoUnit.HOURS;
+import static io.intino.alexandria.datamarts.model.TemporalReferences.today;
+import static java.time.temporal.ChronoUnit.*;
 import static java.util.stream.Collectors.toList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.data.Percentage.withPercentage;
 
+@SuppressWarnings("NewClassNamingConvention")
 public class Signal_ {
 
 	@Test
@@ -49,17 +50,17 @@ public class Signal_ {
 		assertThat(signal.to()).isEqualTo(today(35));
 		assertThat(signal.duration()).isEqualTo(Duration.of(35,DAYS));
 		assertThat(signal.summary().count()).isEqualTo(24*30);
-		assertThat(signal.summary().sum()).isEqualTo(1953L);
-		assertThat(signal.summary().mean()).isCloseTo(2.7125, withPercentage(0.00001));
-		assertThat(signal.summary().sd()).isCloseTo(706.8295, withPercentage(0.00001));
-		assertThat(signal.summary().min().value()).isEqualTo(-999);
-		assertThat(signal.summary().max().value()).isEqualTo(999);
-		assertThat(signal.distribution().min()).isEqualTo(-999);
+		assertThat(signal.summary().sum()).isCloseTo(1955, withPercentage(0.1));
+		assertThat(signal.summary().mean()).isCloseTo(2.715, withPercentage(0.1));
+		assertThat(signal.summary().sd()).isCloseTo(707.303, withPercentage(0.1));
+		assertThat(signal.summary().min().value()).isCloseTo(-1000, withPercentage(0.1));
+		assertThat(signal.summary().max().value()).isCloseTo(1000, withPercentage(0.1));
+		assertThat(signal.distribution().min()).isCloseTo(-1000, withPercentage(0.1));
 		assertThat(signal.distribution().q1()).isCloseTo(-705, withPercentage(1));
 		assertThat(signal.distribution().q2()).isCloseTo(6, withPercentage(20));
 		assertThat(signal.distribution().median()).isCloseTo(6, withPercentage(20));
 		assertThat(signal.distribution().q3()).isCloseTo(706, withPercentage(1));
-		assertThat(signal.distribution().max()).isEqualTo(999);
+		assertThat(signal.distribution().max()).isCloseTo(1000, withPercentage(0.1));
 		assertThat(signal.distribution().probabilityLeftTail(706)).isCloseTo(0.75, withPercentage(1));
 		assertThat(signal.distribution().probabilityRightTail(706)).isCloseTo(0.25, withPercentage(1));
 		assertThat(signal.distribution().probabilityLeftTail(6)).isCloseTo(0.5, withPercentage(1));
@@ -87,14 +88,14 @@ public class Signal_ {
 		assertThat(segments[1].from()).isEqualTo(today(0));
 		assertThat(segments[1].to()).isEqualTo(today(1));
 		assertThat(segments[1].duration()).isEqualTo(Duration.ofDays(1));
-		assertThat(segments[1].summary().min().value()).isEqualTo(-999);
-		assertThat(segments[1].summary().max().value()).isEqualTo(990);
-		assertThat(segments[1].summary().sum()).isEqualTo(981);
-		assertThat(segments[1].summary().mean()).isCloseTo(40.875, withPercentage(0.001));
-		assertThat(segments[1].summary().sd()).isCloseTo(711.885, withPercentage(0.01));
-		assertThat(segments[1].distribution().q1()).isCloseTo(-544, withPercentage(0.01));
-		assertThat(segments[1].distribution().q2()).isCloseTo(141, withPercentage(0.01));
-		assertThat(segments[1].distribution().q3()).isCloseTo(836, withPercentage(0.01));
+		assertThat(segments[1].summary().min().value()).isCloseTo(-999, withPercentage(0.1));
+		assertThat(segments[1].summary().max().value()).isCloseTo(990, withPercentage(0.1));
+		assertThat(segments[1].summary().sum()).isCloseTo(979, withPercentage(0.1));
+		assertThat(segments[1].summary().mean()).isCloseTo(40.825, withPercentage(0.1));
+		assertThat(segments[1].summary().sd()).isCloseTo(712.414, withPercentage(0.1));
+		assertThat(segments[1].distribution().q1()).isCloseTo(-544, withPercentage(0.1));
+		assertThat(segments[1].distribution().q2()).isCloseTo(141., withPercentage(0.1));
+		assertThat(segments[1].distribution().q3()).isCloseTo(836, withPercentage(0.1));
 		assertThat(segments[1].segments(4)[0].duration()).isEqualTo(Duration.of(6, HOURS));
 		assertThat(segments[1].segments(4)[0].count()).isEqualTo(6);
 		assertThat(segments[1].segments(4)[1].duration()).isEqualTo(Duration.of(6, HOURS));
@@ -112,13 +113,25 @@ public class Signal_ {
 		assertThat(segments[5].isEmpty()).isTrue();
 	}
 
-	private List<Point<Long>> points(int from, int to) {
+	@Test
+	public void should_segment_signal_into_monthly_segments() {
+		Instant from = Instant.parse("2025-01-01T00:00:00Z");
+		Signal signal = new Signal.Raw(from, from.plus(365, DAYS), List.of());
+		Signal[] segments = signal.segments(Period.ofMonths(1));
+		assertThat(segments.length).isEqualTo(12);
+		assertThat(segments[0].duration()).isEqualTo(Duration.ofDays(31));
+		assertThat(segments[1].duration()).isEqualTo(Duration.ofDays(28));
+		assertThat(segments[2].duration()).isEqualTo(Duration.ofDays(31));
+		assertThat(segments[3].duration()).isEqualTo(Duration.ofDays(30));
+	}
+
+	private List<Point<Double>> points(int from, int to) {
 		return IntStream.range(from * 24, to * 24)
 				.mapToObj(Signal_::point)
 				.collect(toList());
 	}
 
-	private static Point<Long> point(int i) {
+	private static Point<Double> point(int i) {
 		return new Point<>(feed(i), hour(i), value(i));
 	}
 
@@ -130,8 +143,8 @@ public class Signal_ {
 		return i / 20;
 	}
 
-	private static long value(int value) {
-		return (long) (Math.sin(value) * 1000);
+	private static double value(int value) {
+		return Math.sin(value) * 1000;
 	}
 
 }

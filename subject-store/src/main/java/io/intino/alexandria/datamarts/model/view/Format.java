@@ -1,7 +1,7 @@
-package io.intino.alexandria.model.table;
+package io.intino.alexandria.datamarts.model.view;
 
-import java.time.Duration;
 import java.time.Instant;
+import java.time.temporal.TemporalAmount;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -10,9 +10,9 @@ public class Format implements Iterable<Column> {
 	private final List<Column> columns;
 	private final Instant from;
 	private final Instant to;
-	private final Duration duration;
+	private final TemporalAmount duration;
 
-	public Format(Instant from, Instant to, Duration duration) {
+	public Format(Instant from, Instant to, TemporalAmount duration) {
 		this.from = from;
 		this.to = to;
 		this.duration = duration;
@@ -27,7 +27,7 @@ public class Format implements Iterable<Column> {
 		return to;
 	}
 
-	public Duration duration() {
+	public TemporalAmount duration() {
 		return duration;
 	}
 

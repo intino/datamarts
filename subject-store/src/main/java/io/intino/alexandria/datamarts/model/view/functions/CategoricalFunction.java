@@ -1,6 +1,6 @@
-package io.intino.alexandria.model.table.operators;
+package io.intino.alexandria.datamarts.model.view.functions;
 
-import io.intino.alexandria.model.series.Sequence;
+import io.intino.alexandria.datamarts.model.series.Sequence;
 
 import java.util.function.Function;
 

@@ -1,8 +1,7 @@
 package tests;
 
-import io.intino.alexandria.model.Instants;
-import io.intino.alexandria.model.Point;
-import io.intino.alexandria.SubjectStore;
+import io.intino.alexandria.datamarts.model.Point;
+import io.intino.alexandria.datamarts.SubjectStore;
 import org.junit.Test;
 
 import java.io.File;
@@ -10,10 +9,11 @@ import java.io.IOException;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 
-import static io.intino.alexandria.model.Instants.*;
-import static io.intino.alexandria.model.Instants.TimeSpan.*;
+import static io.intino.alexandria.datamarts.model.TemporalReferences.*;
+import static io.intino.alexandria.datamarts.model.TemporalReferences.TimeSpan.*;
 import static org.assertj.core.api.Assertions.assertThat;
 
+@SuppressWarnings("NewClassNamingConvention")
 public class SubjectStore_ {
 	private static final Instant now = Instant.now().truncatedTo(ChronoUnit.DAYS);
 	private static final String categories = "DEPOLARISE";
@@ -28,15 +28,15 @@ public class SubjectStore_ {
 			assertThat(store.feeds()).isEqualTo(0);
 			assertThat(store.exists("field")).isFalse();
 			assertThat(store.numericalQuery("field").current()).isNull();
-			assertThat(store.numericalQuery("field").signal(Full)).isEmpty();
+			assertThat(store.numericalQuery("field").signal(store.first(), store.last())).isEmpty();
 			assertThat(store.categoricalQuery("field").current()).isNull();
-			assertThat(store.categoricalQuery("field").sequence(Full)).isEmpty();
+			assertThat(store.categoricalQuery("field").sequence(store.first(), store.last())).isEmpty();
 			assertThat(store.legacyExists()).isFalse();
 			assertThat(store.bigbangExists()).isFalse();
 			assertThat(store.instants()).isEmpty();
 		}
 		finally {
-//			file.delete();
+			file.delete();
 		}
 	}
 
@@ -53,7 +53,7 @@ public class SubjectStore_ {
 					.add("Hemoglobin", 130)
 					.execute();
 
-			store.feed(Instants.BigBang, "HMG-B")
+			store.feed(BigBang, "HMG-B")
 					.add("Hemoglobin", 115)
 					.execute();
 
@@ -61,7 +61,7 @@ public class SubjectStore_ {
 					.add("Hemoglobin", 110)
 					.execute();
 
-			Point<Long> actual = store.numericalQuery("Hemoglobin").current();
+			Point<Double> actual = store.numericalQuery("Hemoglobin").current();
 			assertThat(actual.value()).isEqualTo(145L);
 			assertThat(actual.instant()).isEqualTo(today());
 			assertThat(store.legacyExists()).isTrue();
@@ -89,8 +89,8 @@ public class SubjectStore_ {
 
 	private static void test_stored_legacy_values(SubjectStore store) {
 		assertThat(store.feeds()).isEqualTo(1);
-		assertThat(store.from()).isEqualTo(Legacy);
-		assertThat(store.to()).isEqualTo(Legacy);
+		assertThat(store.first()).isEqualTo(Legacy);
+		assertThat(store.last()).isEqualTo(Legacy);
 		assertThat(store.tags()).containsExactly("Country", "Latitude", "Longitude");
 		assertThat(store.ss(0)).isEqualTo("UN:all-ports");
 		assertThat(store.exists("Country")).isTrue();
@@ -106,7 +106,7 @@ public class SubjectStore_ {
 		assertThat(store.categoricalQuery("Country").sequence(LastMonthWindow).values()).containsExactly();
 		assertThat(store.categoricalQuery("Country").sequence(LastDayWindow).values()).containsExactly();
 		assertThat(store.categoricalQuery("Country").sequence(LastHourWindow).values()).containsExactly();
-		assertThat(store.numericalQuery("Latitude").signal(Full).values()).containsExactly(31_219832454L);
+		assertThat(store.numericalQuery("Latitude").signal(store.first(), store.last()).values()).containsExactly(31_219832454L);
 		assertThat(store.numericalQuery("Latitude").signal(LegacyPhase).values()).containsExactly(31_219832454L);
 		assertThat(store.numericalQuery("Latitude").signal(BigBangPhase).values()).containsExactly();
 		assertThat(store.numericalQuery("Latitude").signal(ThisYear).values()).containsExactly();
@@ -127,8 +127,8 @@ public class SubjectStore_ {
 		try (SubjectStore store = new SubjectStore(file)) {
 			store.feed(now, "UN:all-ports")
 					.add("Country", "China")
-					.add("Latitude", 31_219832454L)
-					.add("Longitude", 121_486998052L)
+					.add("Latitude", 31.219832454)
+					.add("Longitude", 121.486998052)
 					.execute();
 			test_stored_features(store);
 		}
@@ -139,16 +139,16 @@ public class SubjectStore_ {
 
 	private static void test_stored_features(SubjectStore store) {
 		assertThat(store.feeds()).isEqualTo(1);
-		assertThat(store.from()).isEqualTo(now);
-		assertThat(store.to()).isEqualTo(now);
+		assertThat(store.first()).isEqualTo(now);
+		assertThat(store.last()).isEqualTo(now);
 		assertThat(store.tags()).containsExactly("Country", "Latitude", "Longitude");
 		assertThat(store.ss(0)).isEqualTo("UN:all-ports");
 		assertThat(store.categoricalQuery("Country").current()).isEqualTo(value(0, now, "China"));
 		assertThat(store.categoricalQuery("Country").current()).isEqualTo(value(0, now, "China"));
 		assertThat(store.categoricalQuery("Country").sequence(today(0), today(1)).count()).isEqualTo(1);
 		assertThat(store.categoricalQuery("Country").sequence(today(0), today(1)).summary().categories()).containsExactly("China");
-		assertThat(store.numericalQuery("Latitude").current()).isEqualTo(value(0, now, 31_219832454L));
-		assertThat(store.numericalQuery("Longitude").current()).isEqualTo(value(0, now, 121_486998052L));
+		assertThat(store.numericalQuery("Latitude").current()).isEqualTo(value(0, now, 31.219832454));
+		assertThat(store.numericalQuery("Longitude").current()).isEqualTo(value(0, now, 121.486998052));
 		assertThat(store.instants()).containsExactly(now);
 	}
 
@@ -176,15 +176,15 @@ public class SubjectStore_ {
 
 	private void test_stored_time_series(SubjectStore store) {
 		assertThat(store.feeds()).isEqualTo(10);
-		assertThat(store.from()).isEqualTo(today());
-		assertThat(store.to()).isEqualTo(today(9));
+		assertThat(store.first()).isEqualTo(today());
+		assertThat(store.last()).isEqualTo(today(9));
 		assertThat(store.tags()).containsExactly("Vessels", "State");
 		assertThat(store.ss(0)).isEqualTo("AIS:movements-0");
 		assertThat(store.ss(9)).isEqualTo("AIS:movements-9");
-		assertThat(store.numericalQuery("Vessels").current()).isEqualTo(value(9, today(9), 1990L));
+		assertThat(store.numericalQuery("Vessels").current()).isEqualTo(value(9, today(9), 1990.0));
 		assertThat(store.numericalQuery("Vessels").signal(today(200), today(300)).isEmpty()).isTrue();
 		assertThat(store.numericalQuery("Vessels").signal(today(-200), today(-100)).isEmpty()).isTrue();
-		assertThat(store.numericalQuery("Vessels").signal(Full).values()).containsExactly(1900L, 1910L, 1920L, 1930L, 1940L, 1950L, 1960L, 1970L, 1980L, 1990L);
+		assertThat(store.numericalQuery("Vessels").signal(store.first(), store.last()).values()).containsExactly(1900L, 1910L, 1920L, 1930L, 1940L, 1950L, 1960L, 1970L, 1980L, 1990L);
 		assertThat(store.categoricalQuery("State").current()).isEqualTo(value(9, today(9), "E"));
 		assertThat(store.categoricalQuery("State").sequence(today(0), today(10)).summary().mode()).isEqualTo("E");
 	}
