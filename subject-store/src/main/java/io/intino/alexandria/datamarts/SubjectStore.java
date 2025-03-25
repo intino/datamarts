@@ -8,9 +8,7 @@ import io.intino.alexandria.datamarts.io.registries.SqliteRegistry;
 import io.intino.alexandria.datamarts.model.series.Sequence;
 import io.intino.alexandria.datamarts.model.series.Signal;
 
-import java.io.Closeable;
-import java.io.File;
-import java.io.IOException;
+import java.io.*;
 import java.time.Instant;
 import java.util.List;
 
@@ -60,6 +58,10 @@ public class SubjectStore implements Closeable {
 		return registry.tags();
 	}
 
+	public boolean exists(String tag) {
+		return tags().contains(tag);
+	}
+
 	public String ss(int feed) {
 		return registry.ss(feed);
 	}
@@ -72,10 +74,18 @@ public class SubjectStore implements Closeable {
 		return new CategoricalQuery(tag);
 	}
 
-	public boolean exists(String tag) {
-		return tags().contains(tag);
+	public void export(File file) throws IOException {
+		try (OutputStream os = new BufferedOutputStream(new FileOutputStream(file))) {
+			export(os);
+		}
 	}
 
+	public void export(OutputStream os) throws IOException {
+		try (Writer writer = new OutputStreamWriter(os)) {
+			//TODO
+			os.write("//TODO\n".getBytes());
+		}
+	}
 
 	public class CategoricalQuery {
 		private final String tag;

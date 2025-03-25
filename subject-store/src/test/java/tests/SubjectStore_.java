@@ -4,8 +4,10 @@ import io.intino.alexandria.datamarts.model.Point;
 import io.intino.alexandria.datamarts.SubjectStore;
 import org.junit.Test;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 
@@ -45,21 +47,7 @@ public class SubjectStore_ {
 		File file = File.createTempFile("patient", ".oss");
 
 		try (SubjectStore store = new SubjectStore(file)) {
-			store.feed(today(), "HMG-2")
-					.add("Hemoglobin", 145)
-					.execute();
-
-			store.feed(today(-5), "HMG-1")
-					.add("Hemoglobin", 130)
-					.execute();
-
-			store.feed(BigBang, "HMG-B")
-					.add("Hemoglobin", 115)
-					.execute();
-
-			store.feed(Legacy, "HMG-L")
-					.add("Hemoglobin", 110)
-					.execute();
+			feed(store);
 
 			Point<Double> actual = store.numericalQuery("Hemoglobin").current();
 			assertThat(actual.value()).isEqualTo(145L);
@@ -70,6 +58,44 @@ public class SubjectStore_ {
 			assertThat(store.instants()).containsExactly(Legacy, BigBang, today(-5), today());
 		}
 	}
+
+	@SuppressWarnings("ResultOfMethodCallIgnored")
+	@Test
+	public void should_export_events() throws IOException {
+		File file = new File("12345:patient.oss");
+
+		try (SubjectStore store = new SubjectStore(file)) {
+			feed(store);
+			OutputStream os = new ByteArrayOutputStream();
+			store.export(os);
+			assertThat(os.toString()).isEqualTo("""
+				//TODO
+				"""
+			);
+		}
+		finally {
+			file.delete();
+		}
+	}
+
+	private static void feed(SubjectStore store) {
+		store.feed(today(), "HMG-2")
+				.add("Hemoglobin", 145)
+				.execute();
+
+		store.feed(today(-5), "HMG-1")
+				.add("Hemoglobin", 130)
+				.execute();
+
+		store.feed(BigBang, "HMG-B")
+				.add("Hemoglobin", 115)
+				.execute();
+
+		store.feed(Legacy, "HMG-L")
+				.add("Hemoglobin", 110)
+				.execute();
+	}
+
 
 	@Test
 	public void should_store_legacy_values() throws IOException {
