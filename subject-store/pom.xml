@@ -6,7 +6,7 @@
 	<parent>
 		<groupId>systems.intino</groupId>
 		<artifactId>datamarts</artifactId>
-		<version>1.0.0-SNAPSHOT</version>
+		<version>1.0.0</version>
 	</parent>
 
 	<groupId>systems.intino.datamarts</groupId>
