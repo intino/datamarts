@@ -61,15 +61,30 @@ public class SubjectStore_ {
 
 	@SuppressWarnings("ResultOfMethodCallIgnored")
 	@Test
-	public void should_export_events() throws IOException {
+	public void should_dump_events() throws IOException {
 		File file = new File("12345:patient.oss");
 
 		try (SubjectStore store = new SubjectStore(file)) {
 			feed(store);
 			OutputStream os = new ByteArrayOutputStream();
-			store.export(os);
+			store.dump(os);
 			assertThat(os.toString()).isEqualTo("""
-				//TODO
+				[patient]
+				ts=2025-03-25T00:00:00Z
+				ss=HMG-2
+				Hemoglobin=145.0
+				[patient]
+				ts=2025-03-20T00:00:00Z
+				ss=HMG-1
+				Hemoglobin=130.0
+				[patient]
+				ts=-314918-08-13T06:13:20Z
+				ss=HMG-B
+				Hemoglobin=115.0
+				[patient]
+				ts=-1899355-09-09T13:20:00Z
+				ss=HMG-L
+				Hemoglobin=110.0
 				"""
 			);
 		}

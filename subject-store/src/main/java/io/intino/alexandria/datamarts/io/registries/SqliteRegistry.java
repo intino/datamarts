@@ -1,11 +1,13 @@
 package io.intino.alexandria.datamarts.io.registries;
 
 import io.intino.alexandria.datamarts.io.Registry;
-import io.intino.alexandria.datamarts.io.Transaction;
+import io.intino.alexandria.datamarts.io.Feed;
 import io.intino.alexandria.datamarts.model.Point;
 import io.intino.alexandria.datamarts.SubjectStore.RegistryException;
 
 import java.io.File;
+import java.io.IOException;
+import java.io.OutputStream;
 import java.sql.*;
 import java.time.Instant;
 import java.util.*;
@@ -21,7 +23,7 @@ public class SqliteRegistry implements Registry {
 	private final StatementProvider statementProvider;
 	private final TagSet tagSet;
 	private final Timeline timeline;
-	private int feeds;
+	private int size;
 
 	static { loadDriver(); }
 
@@ -30,7 +32,7 @@ public class SqliteRegistry implements Registry {
 			this.name = withoutExtension(file.getName());
 			this.connection = isCreated(file) ? ConnectionProvider.open(file) : ConnectionProvider.create(file);
 			this.statementProvider = new StatementProvider();
-			this.feeds = readFeedCount();
+			this.size = readFeedCount();
 			this.tagSet = new TagSet();
 			this.timeline = new Timeline();
 		} catch (SQLException e) {
@@ -51,8 +53,8 @@ public class SqliteRegistry implements Registry {
 	}
 
 	@Override
-	public int feeds() {
-		return feeds;
+	public int size() {
+		return size;
 	}
 
 	public List<String> tags() {
@@ -108,6 +110,20 @@ public class SqliteRegistry implements Registry {
 		}
 	}
 
+	@Override
+	public void dump(OutputStream os) {
+		try {
+			SqlDumper dumper = new SqlDumper(selectAll(), tagSet.tags(), type());
+			dumper.execute(os);
+		} catch (SQLException | IOException e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	String type() {
+		return name.substring(name.indexOf(':') + 1);
+	}
+
 	private List<Point<Double>> readDoubles(int tag, int from, int to) throws SQLException {
 		List<Point<Double>> timeEntries = new ArrayList<>();
 		try (ResultSet rs = selectDoubleValues(tag, from, to)) {
@@ -138,17 +154,18 @@ public class SqliteRegistry implements Registry {
 	}
 
 	@Override
-	public void register(Transaction transaction) {
+	public void register(Feed feed) {
 		try {
-			updateInstants(transaction);
-			updateTags(transaction);
-			store(transaction);
+			updateInstants(feed);
+			updateTags(feed);
+			store(feed);
 			updateFeed();
 			connection.commit();
 		} catch (SQLException e) {
 			throw new RegistryException(e);
 		}
 	}
+
 
 	private List<Point<String>> readTexts(int tag, int from, int to) throws SQLException {
 		List<Point<String>> timeEntries = new ArrayList<>();
@@ -161,23 +178,23 @@ public class SqliteRegistry implements Registry {
 		return timeEntries;
 	}
 
-	private void store(Transaction transaction) throws SQLException {
-		insertEntry("ts", transaction.instant);
-		insertEntry("ss", transaction.source);
-		for (String tag : transaction.tags())
-			insertEntry(tag, transaction.get(tag));
+	private void store(Feed feed) throws SQLException {
+		insertEntry("ts", feed.instant);
+		insertEntry("ss", feed.source);
+		for (String tag : feed.tags())
+			insertEntry(tag, feed.get(tag));
 	}
 
-	private void updateInstants(Transaction transaction) {
-		timeline.update(transaction.instant);
+	private void updateInstants(Feed feed) {
+		timeline.update(feed.instant);
 	}
 
-	private void updateTags(Transaction transaction) throws SQLException {
-		tagSet.insert(transaction.tags());
+	private void updateTags(Feed feed) throws SQLException {
+		tagSet.insert(feed.tags());
 		updateTagFeed(tagSet.get("ts"));
 		updateTagFeed(tagSet.get("ss"));
-		if (transaction.isLegacy()) return;
-		tagSet.update(transaction.tags(), transaction.instant);
+		if (feed.isLegacy()) return;
+		tagSet.update(feed.tags(), feed.instant);
 	}
 
 	private static final int FEEDS = -1;
@@ -210,6 +227,10 @@ public class SqliteRegistry implements Registry {
 		if (o instanceof Number) return NUMERIC;
 		if (o instanceof Instant) return DATE;
 		return VARCHAR;
+	}
+
+	private ResultSet selectAll() throws SQLException {
+		return statementProvider.get("select-all").executeQuery();
 	}
 
 	private ResultSet selectTags() throws SQLException {
@@ -252,7 +273,7 @@ public class SqliteRegistry implements Registry {
 
 	private void updateFeed() throws SQLException {
 		PreparedStatement statement = statementProvider.get("update-feed");
-		statement.setInt(1, ++feeds);
+		statement.setInt(1, ++size);
 		statement.execute();
 	}
 
@@ -266,7 +287,7 @@ public class SqliteRegistry implements Registry {
 	private void insertEntry(int tag, Instant value) throws SQLException {
 		PreparedStatement statement = statementProvider.get("insert-entry");
 		statement.setInt(1, tag);
-		statement.setInt(2, feeds);
+		statement.setInt(2, size);
 		statement.setLong(3, value.toEpochMilli());
 		statement.setString(4, labelOf(value));
 		statement.execute();
@@ -275,7 +296,7 @@ public class SqliteRegistry implements Registry {
 	private void insertEntry(int tag, double value) throws SQLException {
 		PreparedStatement statement = statementProvider.get("insert-entry");
 		statement.setInt(1, tag);
-		statement.setInt(2, feeds);
+		statement.setInt(2, size);
 		statement.setDouble(3, value);
 		statement.setNull(4, VARCHAR);
 		statement.execute();
@@ -284,7 +305,7 @@ public class SqliteRegistry implements Registry {
 	private void insertEntry(int tag, String value) throws SQLException {
 		PreparedStatement statement = statementProvider.get("insert-entry");
 		statement.setInt(1, tag);
-		statement.setInt(2, feeds);
+		statement.setInt(2, size);
 		statement.setNull(3, BIGINT);
 		statement.setString(4, value);
 		statement.execute();
@@ -292,7 +313,7 @@ public class SqliteRegistry implements Registry {
 
 	private void updateTagFeed(int id) throws SQLException {
 		PreparedStatement statement = statementProvider.get("update-tag-feed");
-		statement.setInt(1, feeds);
+		statement.setInt(1, size);
 		statement.setInt(2, id);
 		statement.execute();
 	}
@@ -331,11 +352,11 @@ public class SqliteRegistry implements Registry {
 					);
 				
 					CREATE TABLE map (
-						tag INTEGER NOT NULL,
 						feed INTEGER NOT NULL,
+						tag INTEGER NOT NULL,
 						num REAL,
 						txt TEXT,
-						PRIMARY KEY (tag, feed)
+						PRIMARY KEY (feed, tag)
 					);
 					CREATE INDEX IF NOT EXISTS idx_tag ON map(tag);
 					CREATE INDEX IF NOT EXISTS idx_feed ON map(feed);
@@ -372,6 +393,7 @@ public class SqliteRegistry implements Registry {
 			statements.put("insert-entry", create("INSERT INTO map (tag, feed, num, txt) VALUES (?, ?, ?, ?)"));
 			statements.put("update-tag-feed", create("UPDATE tags SET feed = ? WHERE tag = ?;"));
 			statements.put("update-feed", create("UPDATE map SET num = ? WHERE tag = -1 AND feed = -1;"));
+			statements.put("select-all", create("SELECT * FROM map ORDER BY feed, tag;"));
 			statements.put("select-tags", create("SELECT tag, label, feed FROM tags"));
 			statements.put("select-instants", create("SELECT feed, num FROM map WHERE tag = 0"));
 			statements.put("select-double-value", create("SELECT num FROM map WHERE tag = ? AND feed = ?"));
@@ -407,7 +429,7 @@ public class SqliteRegistry implements Registry {
 
 		List<String> tags() {
 			return labels.entrySet().stream()
-					.filter(e -> e.getValue() > 1)
+					.filter(e->e.getValue() > 1)
 					.sorted(comparingInt(Map.Entry::getValue))
 					.map(Map.Entry::getKey)
 					.toList();
@@ -450,7 +472,7 @@ public class SqliteRegistry implements Registry {
 
 		private void update(int tag, Instant instant) throws SQLException {
 			if (lastUpdatingInstantOf(tag).isAfter(instant)) return;
-			lastUpdatingFeeds.put(tag, feeds);
+			lastUpdatingFeeds.put(tag, size);
 			updateTagFeed(tag);
 		}
 
@@ -463,6 +485,7 @@ public class SqliteRegistry implements Registry {
 		public boolean contains(String tag) {
 			return labels.containsKey(tag);
 		}
+
 	}
 
 	class Timeline {
@@ -484,7 +507,7 @@ public class SqliteRegistry implements Registry {
 		}
 
 		void update(Instant instant) {
-			instants.put(feeds, instant);
+			instants.put(size, instant);
 		}
 
 		private void init(ResultSet rs) throws SQLException {

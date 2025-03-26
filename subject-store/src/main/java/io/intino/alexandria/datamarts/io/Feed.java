@@ -7,12 +7,12 @@ import java.util.Set;
 
 import static io.intino.alexandria.datamarts.model.TemporalReferences.Legacy;
 
-public final class Transaction {
+public final class Feed {
 	public final Instant instant;
 	public final String source;
 	public final Map<String, Object> facts;
 
-	public Transaction(Instant instant, String source) {
+	public Feed(Instant instant, String source) {
 		this.instant = instant;
 		this.source = source;
 		this.facts = new HashMap<>();

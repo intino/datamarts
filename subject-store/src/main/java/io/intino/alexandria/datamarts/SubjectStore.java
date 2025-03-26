@@ -1,7 +1,6 @@
 package io.intino.alexandria.datamarts;
 
 import io.intino.alexandria.datamarts.io.Registry;
-import io.intino.alexandria.datamarts.io.Transaction;
 import io.intino.alexandria.datamarts.model.TemporalReferences;
 import io.intino.alexandria.datamarts.model.Point;
 import io.intino.alexandria.datamarts.io.registries.SqliteRegistry;
@@ -27,7 +26,7 @@ public class SubjectStore implements Closeable {
 	}
 
 	public int feeds() {
-		return registry.feeds();
+		return registry.size();
 	}
 
 	public Instant first() {
@@ -74,17 +73,14 @@ public class SubjectStore implements Closeable {
 		return new CategoricalQuery(tag);
 	}
 
-	public void export(File file) throws IOException {
+	public void dump(File file) throws IOException {
 		try (OutputStream os = new BufferedOutputStream(new FileOutputStream(file))) {
-			export(os);
+			dump(os);
 		}
 	}
 
-	public void export(OutputStream os) throws IOException {
-		try (Writer writer = new OutputStreamWriter(os)) {
-			//TODO
-			os.write("//TODO\n".getBytes());
-		}
+	public void dump(OutputStream os) {
+		registry.dump(os);
 	}
 
 	public class CategoricalQuery {
@@ -138,26 +134,26 @@ public class SubjectStore implements Closeable {
 	}
 
 	public Feed feed(Instant instant, String source) {
-		return feed(new Transaction(instant, source));
+		return feed(new io.intino.alexandria.datamarts.io.Feed(instant, source));
 	}
 
-	private Feed feed(Transaction transaction) {
+	private Feed feed(io.intino.alexandria.datamarts.io.Feed feed) {
 		return new Feed() {
 			@Override
 			public Feed add(String tag, String value) {
-				transaction.put(tag, value);
+				feed.put(tag, value);
 				return this;
 			}
 
 			@Override
 			public Feed add(String tag, double value) {
-				transaction.put(tag, value);
+				feed.put(tag, value);
 				return this;
 			}
 
 			@Override
 			public void execute() {
-				registry.register(transaction);
+				registry.register(feed);
 			}
 		};
 	}

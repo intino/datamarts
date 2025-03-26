@@ -3,20 +3,24 @@ package io.intino.alexandria.datamarts.io;
 import io.intino.alexandria.datamarts.model.Point;
 
 import java.io.Closeable;
+import java.io.OutputStream;
 import java.time.Instant;
+import java.util.Iterator;
 import java.util.List;
 
 public interface Registry extends Closeable {
 
 	String name();
 
-	int feeds();
+	int size();
 
 	List<String> tags();
 
 	List<Instant> instants();
 
-	default boolean isEmpty() { return instants().isEmpty(); }
+	default boolean isEmpty() { return size() == 0; }
+
+	void register(Feed feed);
 
 	String ss(int feed);
 
@@ -28,5 +32,6 @@ public interface Registry extends Closeable {
 
 	List<Point<String>> readTexts(String tag, Instant from, Instant to);
 
-	void register(Transaction transaction);
+	void dump(OutputStream os);
+
 }
