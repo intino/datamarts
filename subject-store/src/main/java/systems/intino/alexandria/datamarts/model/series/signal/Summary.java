@@ -1,6 +1,6 @@
-package io.intino.alexandria.datamarts.model.series.signal;
+package systems.intino.alexandria.datamarts.model.series.signal;
 
-import io.intino.alexandria.datamarts.model.Point;
+import systems.intino.alexandria.datamarts.model.Point;
 
 import java.util.HashMap;
 import java.util.Map;

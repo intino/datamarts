@@ -1,4 +1,4 @@
-package io.intino.alexandria.datamarts.model.view;
+package systems.intino.alexandria.datamarts.model.view;
 
 import java.time.Instant;
 import java.time.temporal.TemporalAmount;

@@ -1,9 +1,9 @@
 package tests;
 
-import io.intino.alexandria.datamarts.SubjectView;
-import io.intino.alexandria.datamarts.SubjectStore;
-import io.intino.alexandria.datamarts.model.view.Column;
-import io.intino.alexandria.datamarts.model.view.Format;
+import systems.intino.alexandria.datamarts.SubjectView;
+import systems.intino.alexandria.datamarts.SubjectStore;
+import systems.intino.alexandria.datamarts.model.view.Column;
+import systems.intino.alexandria.datamarts.model.view.Format;
 import org.junit.Test;
 
 import java.io.ByteArrayOutputStream;
@@ -12,11 +12,11 @@ import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
 
-import static io.intino.alexandria.datamarts.model.view.functions.CategoricalFunction.*;
-import static io.intino.alexandria.datamarts.model.view.functions.NumericalFunction.*;
-import static io.intino.alexandria.datamarts.model.view.functions.TemporalFunction.*;
 import static java.time.temporal.ChronoUnit.*;
 import static org.assertj.core.api.Assertions.assertThat;
+import static systems.intino.alexandria.datamarts.model.view.functions.CategoricalFunction.Mode;
+import static systems.intino.alexandria.datamarts.model.view.functions.NumericalFunction.*;
+import static systems.intino.alexandria.datamarts.model.view.functions.TemporalFunction.*;
 
 @SuppressWarnings("NewClassNamingConvention")
 public class SubjectView_ {
@@ -53,14 +53,14 @@ public class SubjectView_ {
 	private void feed(SubjectStore store) {
 		store.feed(from.plus(10, DAYS), "test")
 				.add("temperature", 20)
-				.execute();
+				.terminate();
 		store.feed(from.plus(12, DAYS), "test")
 				.add("temperature", 28)
 				.add("sky", "cloudy")
-				.execute();
+				.terminate();
 		store.feed(from.plus(28, DAYS), "test")
 				.add("temperature", 18)
 				.add("sky", "rain")
-				.execute();
+				.terminate();
 	}
 }

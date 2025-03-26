@@ -1,6 +1,6 @@
-package io.intino.alexandria.datamarts.model.series.sequence;
+package systems.intino.alexandria.datamarts.model.series.sequence;
 
-import io.intino.alexandria.datamarts.model.Point;
+import systems.intino.alexandria.datamarts.model.Point;
 
 import java.util.*;
 

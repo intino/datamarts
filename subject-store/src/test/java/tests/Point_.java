@@ -1,6 +1,6 @@
 package tests;
 
-import io.intino.alexandria.datamarts.model.Point;
+import systems.intino.alexandria.datamarts.model.Point;
 import org.junit.Test;
 
 import java.time.Instant;

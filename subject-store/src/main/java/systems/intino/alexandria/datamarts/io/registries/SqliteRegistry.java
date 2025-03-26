@@ -1,9 +1,9 @@
-package io.intino.alexandria.datamarts.io.registries;
+package systems.intino.alexandria.datamarts.io.registries;
 
-import io.intino.alexandria.datamarts.io.Registry;
-import io.intino.alexandria.datamarts.io.Feed;
-import io.intino.alexandria.datamarts.model.Point;
-import io.intino.alexandria.datamarts.SubjectStore.RegistryException;
+import systems.intino.alexandria.datamarts.io.Registry;
+import systems.intino.alexandria.datamarts.io.Feed;
+import systems.intino.alexandria.datamarts.model.Point;
+import systems.intino.alexandria.datamarts.SubjectStore.RegistryException;
 
 import java.io.File;
 import java.io.IOException;
@@ -11,9 +11,10 @@ import java.io.OutputStream;
 import java.sql.*;
 import java.time.Instant;
 import java.util.*;
+import java.util.Map.Entry;
 
-import static io.intino.alexandria.datamarts.model.TemporalReferences.BigBang;
-import static io.intino.alexandria.datamarts.model.TemporalReferences.Legacy;
+import static systems.intino.alexandria.datamarts.model.TemporalReferences.BigBang;
+import static systems.intino.alexandria.datamarts.model.TemporalReferences.Legacy;
 import static java.sql.Types.*;
 import static java.util.Comparator.comparingInt;
 
@@ -27,6 +28,20 @@ public class SqliteRegistry implements Registry {
 
 	static { loadDriver(); }
 
+	public SqliteRegistry(String name) {
+		try {
+			this.name = name;
+			this.connection = ConnectionProvider.memory();
+			this.statementProvider = new StatementProvider();
+			this.size = readFeedCount();
+			this.tagSet = new TagSet();
+			this.timeline = new Timeline();
+		} catch (SQLException e) {
+			throw new RuntimeException(e);
+		}
+
+	}
+
 	public SqliteRegistry(File file) {
 		try {
 			this.name = withoutExtension(file.getName());
@@ -36,11 +51,11 @@ public class SqliteRegistry implements Registry {
 			this.tagSet = new TagSet();
 			this.timeline = new Timeline();
 		} catch (SQLException e) {
-			throw new RegistryException(e);
+			throw new RuntimeException(e);
 		}
 	}
 
-	private String withoutExtension(String name) {
+	private static String withoutExtension(String name) {
 		return name.substring(0, name.lastIndexOf('.'));
 	}
 
@@ -50,6 +65,18 @@ public class SqliteRegistry implements Registry {
 
 	public String name() {
 		return name;
+	}
+
+	@Override
+	public String id() {
+		int index = name.indexOf('-');
+		return name.substring(index+1);
+	}
+
+
+	public String type() {
+		int index = name.indexOf('-');
+		return index > 0 ? name.substring(0, index) : "subject";
 	}
 
 	@Override
@@ -113,15 +140,19 @@ public class SqliteRegistry implements Registry {
 	@Override
 	public void dump(OutputStream os) {
 		try {
-			SqlDumper dumper = new SqlDumper(selectAll(), tagSet.tags(), type());
+			SqlDumper dumper = new SqlDumper(selectAll(), dumpDictionary());
 			dumper.execute(os);
 		} catch (SQLException | IOException e) {
 			throw new RuntimeException(e);
 		}
 	}
 
-	String type() {
-		return name.substring(name.indexOf(':') + 1);
+	private Map<Object, String> dumpDictionary() {
+		Map<Object, String> map = new HashMap<>();
+		map.put("id", id());
+		map.put("type", type());
+		tagSet.labels.forEach((k, v) -> map.put(v, k));
+		return map;
 	}
 
 	private List<Point<Double>> readDoubles(int tag, int from, int to) throws SQLException {
@@ -154,12 +185,14 @@ public class SqliteRegistry implements Registry {
 	}
 
 	@Override
-	public void register(Feed feed) {
+	public void register(List<Feed> feeds) {
 		try {
-			updateInstants(feed);
-			updateTags(feed);
-			store(feed);
-			updateFeed();
+			for (Feed feed : feeds) {
+				updateInstants(feed);
+				updateTags(feed);
+				store(feed);
+				updateFeed();
+			}
 			connection.commit();
 		} catch (SQLException e) {
 			throw new RegistryException(e);
@@ -343,7 +376,7 @@ public class SqliteRegistry implements Registry {
 
 	private static class ConnectionProvider {
 
-		private static final String CreateMapDefinition = """
+		private static final String InitDatabase = """
 					CREATE TABLE tags (
 						tag INTEGER NOT NULL,
 						label TEXT,
@@ -365,6 +398,16 @@ public class SqliteRegistry implements Registry {
 					INSERT INTO map (tag, feed, num, txt) VALUES (-1, -1, 0, NULL);
 				""";
 
+		static Connection memory() throws SQLException {
+			Connection connection = DriverManager.getConnection("jdbc:sqlite::memory:");
+			connection.setAutoCommit(false);
+			Statement statement = connection.createStatement();
+			statement.executeUpdate(InitDatabase);
+			connection.commit();
+			return connection;
+		}
+
+
 		static Connection open(File file) throws SQLException {
 			Connection connection = DriverManager.getConnection("jdbc:sqlite:" + file.getAbsolutePath());
 			connection.setAutoCommit(false);
@@ -374,7 +417,7 @@ public class SqliteRegistry implements Registry {
 		static Connection create(File file) throws SQLException {
 			Connection connection = open(file);
 			Statement statement = connection.createStatement();
-			statement.executeUpdate(CreateMapDefinition);
+			statement.executeUpdate(InitDatabase);
 			connection.commit();
 			return connection;
 		}
@@ -414,8 +457,8 @@ public class SqliteRegistry implements Registry {
 	}
 
 	class TagSet {
-		private final Map<String, Integer> labels;
-		private final Map<Integer, Integer> lastUpdatingFeeds;
+		final Map<String, Integer> labels;
+		final Map<Integer, Integer> lastUpdatingFeeds;
 
 		TagSet() throws SQLException {
 			this.labels = new HashMap<>();
@@ -430,8 +473,8 @@ public class SqliteRegistry implements Registry {
 		List<String> tags() {
 			return labels.entrySet().stream()
 					.filter(e->e.getValue() > 1)
-					.sorted(comparingInt(Map.Entry::getValue))
-					.map(Map.Entry::getKey)
+					.sorted(comparingInt(Entry::getValue))
+					.map(Entry::getKey)
 					.toList();
 		}
 
@@ -521,7 +564,7 @@ public class SqliteRegistry implements Registry {
 			if (from.equals(Instant.MIN)) return 0;
 			int index = instants.size();
 			Instant min = Instant.MAX;
-			for (Map.Entry<Integer, Instant> entry : instants.entrySet()) {
+			for (Entry<Integer, Instant> entry : instants.entrySet()) {
 				Instant instant = entry.getValue();
 				if (instant.isBefore(from)) continue;
 				if (instant.isAfter(min)) continue;
@@ -535,7 +578,7 @@ public class SqliteRegistry implements Registry {
 			if (to.equals(Instant.MAX)) return instants.size();
 			int index = -1;
 			Instant max = Instant.MIN;
-			for (Map.Entry<Integer, Instant> entry : instants.entrySet()) {
+			for (Entry<Integer, Instant> entry : instants.entrySet()) {
 				Instant instant = entry.getValue();
 				if (instant.isAfter(to)) continue;
 				if (instant.isBefore(max)) continue;

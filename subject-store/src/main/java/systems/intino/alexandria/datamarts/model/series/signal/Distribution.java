@@ -1,7 +1,7 @@
-package io.intino.alexandria.datamarts.model.series.signal;
+package systems.intino.alexandria.datamarts.model.series.signal;
 
 import com.tdunning.math.stats.TDigest;
-import io.intino.alexandria.datamarts.model.Point;
+import systems.intino.alexandria.datamarts.model.Point;
 
 public class Distribution {
 	private final TDigest tdigest;

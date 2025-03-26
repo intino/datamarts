@@ -1,10 +1,10 @@
-package io.intino.alexandria.datamarts.model.view;
+package systems.intino.alexandria.datamarts.model.view;
 
-import io.intino.alexandria.datamarts.model.series.Sequence;
-import io.intino.alexandria.datamarts.model.series.Signal;
-import io.intino.alexandria.datamarts.model.view.functions.CategoricalFunction;
-import io.intino.alexandria.datamarts.model.view.functions.NumericalFunction;
-import io.intino.alexandria.datamarts.model.view.functions.TemporalFunction;
+import systems.intino.alexandria.datamarts.model.series.Sequence;
+import systems.intino.alexandria.datamarts.model.series.Signal;
+import systems.intino.alexandria.datamarts.model.view.functions.CategoricalFunction;
+import systems.intino.alexandria.datamarts.model.view.functions.NumericalFunction;
+import systems.intino.alexandria.datamarts.model.view.functions.TemporalFunction;
 
 public interface Column {
 	String name();

@@ -1,4 +1,4 @@
-package io.intino.alexandria.datamarts.model;
+package systems.intino.alexandria.datamarts.model;
 
 import java.time.Instant;
 import java.time.ZonedDateTime;

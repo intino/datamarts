@@ -1,4 +1,4 @@
-package io.intino.alexandria.datamarts.model.view.functions;
+package systems.intino.alexandria.datamarts.model.view.functions;
 
 import java.time.*;
 import java.time.format.DateTimeFormatter;

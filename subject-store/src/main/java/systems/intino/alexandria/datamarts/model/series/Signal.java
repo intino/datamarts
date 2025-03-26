@@ -1,10 +1,10 @@
-package io.intino.alexandria.datamarts.model.series;
+package systems.intino.alexandria.datamarts.model.series;
 
-import io.intino.alexandria.datamarts.model.TemporalReferences;
-import io.intino.alexandria.datamarts.model.Point;
-import io.intino.alexandria.datamarts.model.Series;
-import io.intino.alexandria.datamarts.model.series.signal.Distribution;
-import io.intino.alexandria.datamarts.model.series.signal.Summary;
+import systems.intino.alexandria.datamarts.model.TemporalReferences;
+import systems.intino.alexandria.datamarts.model.Point;
+import systems.intino.alexandria.datamarts.model.Series;
+import systems.intino.alexandria.datamarts.model.series.signal.Distribution;
+import systems.intino.alexandria.datamarts.model.series.signal.Summary;
 
 import java.time.Instant;
 import java.time.temporal.TemporalAmount;

@@ -1,11 +1,11 @@
-package io.intino.alexandria.datamarts.io;
+package systems.intino.alexandria.datamarts.io;
 
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
-import static io.intino.alexandria.datamarts.model.TemporalReferences.Legacy;
+import static systems.intino.alexandria.datamarts.model.TemporalReferences.Legacy;
 
 public final class Feed {
 	public final Instant instant;
@@ -32,5 +32,9 @@ public final class Feed {
 
 	public boolean isLegacy() {
 		return instant.equals(Legacy);
+	}
+
+	public boolean isEmpty() {
+		return facts.isEmpty();
 	}
 }

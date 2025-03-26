@@ -1,15 +1,15 @@
-package io.intino.alexandria.datamarts.model.series;
+package systems.intino.alexandria.datamarts.model.series;
 
-import io.intino.alexandria.datamarts.model.TemporalReferences;
-import io.intino.alexandria.datamarts.model.Point;
-import io.intino.alexandria.datamarts.model.Series;
-import io.intino.alexandria.datamarts.model.series.sequence.Summary;
+import systems.intino.alexandria.datamarts.model.TemporalReferences;
+import systems.intino.alexandria.datamarts.model.Point;
+import systems.intino.alexandria.datamarts.model.Series;
+import systems.intino.alexandria.datamarts.model.series.sequence.Summary;
 
 import java.time.Instant;
 import java.time.temporal.TemporalAmount;
 import java.util.List;
 
-import static io.intino.alexandria.datamarts.model.TemporalReferences.iterate;
+import static systems.intino.alexandria.datamarts.model.TemporalReferences.iterate;
 
 public interface Sequence extends Series<String> {
 	default String[] values() { return stream().map(Point::value).toArray(String[]::new); }

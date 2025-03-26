@@ -1,18 +1,20 @@
-package io.intino.alexandria.datamarts;
+package systems.intino.alexandria.datamarts;
 
-import io.intino.alexandria.datamarts.io.Registry;
-import io.intino.alexandria.datamarts.model.TemporalReferences;
-import io.intino.alexandria.datamarts.model.Point;
-import io.intino.alexandria.datamarts.io.registries.SqliteRegistry;
-import io.intino.alexandria.datamarts.model.series.Sequence;
-import io.intino.alexandria.datamarts.model.series.Signal;
+import systems.intino.alexandria.datamarts.io.Feed;
+import systems.intino.alexandria.datamarts.io.Registry;
+import systems.intino.alexandria.datamarts.model.TemporalReferences;
+import systems.intino.alexandria.datamarts.model.Point;
+import systems.intino.alexandria.datamarts.io.registries.SqliteRegistry;
+import systems.intino.alexandria.datamarts.model.series.Sequence;
+import systems.intino.alexandria.datamarts.model.series.Signal;
 
 import java.io.*;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 
-import static io.intino.alexandria.datamarts.model.TemporalReferences.BigBang;
-import static io.intino.alexandria.datamarts.model.TemporalReferences.Legacy;
+import static systems.intino.alexandria.datamarts.model.TemporalReferences.BigBang;
+import static systems.intino.alexandria.datamarts.model.TemporalReferences.Legacy;
 
 public class SubjectStore implements Closeable {
 	private final Registry registry;
@@ -21,11 +23,23 @@ public class SubjectStore implements Closeable {
 		this.registry = new SqliteRegistry(file);
 	}
 
+	public SubjectStore(String name) {
+		this.registry = new SqliteRegistry(name);
+	}
+
 	public String name() {
 		return registry.name();
 	}
 
-	public int feeds() {
+	public String type() {
+		return registry.type();
+	}
+
+	public String id() {
+		return registry.id();
+	}
+
+	public int 	size() {
 		return registry.size();
 	}
 
@@ -133,35 +147,78 @@ public class SubjectStore implements Closeable {
 		}
 	}
 
-	public Feed feed(Instant instant, String source) {
-		return feed(new io.intino.alexandria.datamarts.io.Feed(instant, source));
-	}
 
-	private Feed feed(io.intino.alexandria.datamarts.io.Feed feed) {
-		return new Feed() {
+	public Batch batch() {
+		return new Batch() {
+			private final List<Feed> feeds = new ArrayList<>();
 			@Override
-			public Feed add(String tag, String value) {
-				feed.put(tag, value);
-				return this;
+			public Transaction feed(Instant instant, String source) {
+				return new Transaction() {
+					private final Feed feed = new Feed(instant, source);
+					@Override
+					public Transaction add(String tag, double value) {
+						feed.put(tag, value);
+						return this;
+
+					}
+
+					@Override
+					public Transaction add(String tag, String value) {
+						feed.put(tag, value);
+						return this;
+					}
+
+					@Override
+					public void terminate() {
+						if (feed.isEmpty()) return;
+						feeds.add(feed);
+					}
+				};
 			}
 
 			@Override
-			public Feed add(String tag, double value) {
-				feed.put(tag, value);
-				return this;
-			}
-
-			@Override
-			public void execute() {
-				registry.register(feed);
+			public void terminate() {
+				registry.register(feeds);
 			}
 		};
 	}
 
-	public interface Feed {
-		Feed add(String name, double value);
-		Feed add(String name, String value);
-		void execute();
+	public Transaction feed(Instant instant, String source) {
+		return transaction(new Feed(instant, source));
+	}
+
+	private Transaction transaction(Feed feed) {
+		return new Transaction() {
+			@Override
+			public Transaction add(String tag, String value) {
+				feed.put(tag, value);
+				return this;
+			}
+
+			@Override
+			public Transaction add(String tag, double value) {
+				feed.put(tag, value);
+				return this;
+			}
+
+
+			@Override
+			public void terminate() {
+				if (feed.isEmpty()) return;
+				registry.register(List.of(feed));
+			}
+		};
+	}
+
+	public interface Batch {
+		Transaction feed(Instant instant, String source);
+		void terminate();
+	}
+
+	public interface Transaction {
+		Transaction add(String tag, double value);
+		Transaction add(String tag, String value);
+		void terminate();
 	}
 
 	@Override

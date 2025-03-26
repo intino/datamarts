@@ -1,12 +1,12 @@
-package io.intino.alexandria.datamarts;
+package systems.intino.alexandria.datamarts;
 
-import io.intino.alexandria.datamarts.model.TemporalReferences;
-import io.intino.alexandria.datamarts.model.view.Column.Categorical;
-import io.intino.alexandria.datamarts.model.view.Column.Numerical;
-import io.intino.alexandria.datamarts.model.view.Format;
-import io.intino.alexandria.datamarts.model.view.Column;
-import io.intino.alexandria.datamarts.model.series.Sequence;
-import io.intino.alexandria.datamarts.model.series.Signal;
+import systems.intino.alexandria.datamarts.model.TemporalReferences;
+import systems.intino.alexandria.datamarts.model.view.Column.Categorical;
+import systems.intino.alexandria.datamarts.model.view.Column.Numerical;
+import systems.intino.alexandria.datamarts.model.view.Format;
+import systems.intino.alexandria.datamarts.model.view.Column;
+import systems.intino.alexandria.datamarts.model.series.Sequence;
+import systems.intino.alexandria.datamarts.model.series.Signal;
 
 import java.io.*;
 import java.time.*;
