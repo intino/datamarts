@@ -1,39 +1,40 @@
 package systems.intino.alexandria.datamarts.io;
 
-import systems.intino.alexandria.datamarts.model.Point;
+import systems.intino.alexandria.datamarts.model.Bundle;
 
 import java.io.Closeable;
 import java.io.OutputStream;
-import java.time.Instant;
-import java.util.List;
+import java.util.Map;
 
 public interface Registry extends Closeable {
 
-	String name();
-
-	String id();
-
-	String type();
-
 	int size();
-
-	List<String> tags();
-
-	List<Instant> instants();
 
 	default boolean isEmpty() { return size() == 0; }
 
-	void register(List<Feed> feeds);
+	Bundle tags();
+
+	Bundle instants();
 
 	String ss(int feed);
 
-	Point<Double> readNumber(String tag);
+	double getNumber(int tag, int feed);
 
-	Point<String> readText(String tag);
+	String getText(int tag, int feed);
 
-	List<Point<Double>> readNumbers(String tag, Instant from, Instant to);
+	Bundle getNumbers(int tag, int from, int to);
 
-	List<Point<String>> readTexts(String tag, Instant from, Instant to);
+	Bundle getTexts(int tag, int from, int to);
 
-	void dump(OutputStream os);
+	void setTag(int id, String label);
+
+	void setTagLastFeed(int id, int feed);
+
+	int nextFeed();
+
+	void put(int tag, Object value);
+
+	void push();
+
+	void dump(OutputStream os, Map<Object, String> dictionary);
 }

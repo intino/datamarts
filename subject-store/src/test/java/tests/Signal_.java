@@ -33,6 +33,7 @@ public class Signal_ {
 		assertThat(signal.summary().sd()).isNaN();
 		assertThat(signal.summary().min()).isNull();
 		assertThat(signal.summary().max()).isNull();
+		assertThat(signal.summary().range()).isNaN();
 	}
 
 	@Test
@@ -55,6 +56,7 @@ public class Signal_ {
 		assertThat(signal.summary().sd()).isCloseTo(707.303, withPercentage(0.1));
 		assertThat(signal.summary().min().value()).isCloseTo(-1000, withPercentage(0.1));
 		assertThat(signal.summary().max().value()).isCloseTo(1000, withPercentage(0.1));
+		assertThat(signal.summary().range()).isCloseTo(2000, withPercentage(0.1));
 		assertThat(signal.distribution().min()).isCloseTo(-1000, withPercentage(0.1));
 		assertThat(signal.distribution().q1()).isCloseTo(-705, withPercentage(1));
 		assertThat(signal.distribution().q2()).isCloseTo(6, withPercentage(20));

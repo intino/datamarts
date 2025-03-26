@@ -24,10 +24,10 @@ public class SubjectView_ {
 	private final static Instant to = Instant.parse("2025-02-01T00:00:00Z");
 	private final static String expected = """
 		1	1	0.0	0.0				20250101
-		8	1	1.0	24.0	20.0	28.0		20250108
+		8	1	1.0	24.0	20.0	28.0	cloudy	20250108
 		15	1	0.0	0.0				20250115
 		22	1	0.0	0.0				20250122
-		29	1	0.75	18.0	18.0	18.0		20250129
+		29	1	0.75	18.0	18.0	18.0	rain	20250129
 		""";
 
 	@Test

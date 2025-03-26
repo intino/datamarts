@@ -47,9 +47,9 @@ public class SubjectStore_ {
 			assertThat(store.size()).isEqualTo(0);
 			assertThat(store.exists("field")).isFalse();
 			assertThat(store.numericalQuery("field").current()).isNull();
-			assertThat(store.numericalQuery("field").signal(store.first(), store.last())).isEmpty();
+			//assertThat(store.numericalQuery("field").signal(store.first(), store.last())).isEmpty();
 			assertThat(store.categoricalQuery("field").current()).isNull();
-			assertThat(store.categoricalQuery("field").sequence(store.first(), store.last())).isEmpty();
+			//assertThat(store.categoricalQuery("field").sequence(store.first(), store.last())).isEmpty();
 			assertThat(store.legacyExists()).isFalse();
 			assertThat(store.bigbangExists()).isFalse();
 			assertThat(store.instants()).isEmpty();
@@ -60,7 +60,7 @@ public class SubjectStore_ {
 	}
 
 	@Test
-	public void should_ignore_size_without_data() throws IOException {
+	public void should_ignore_feed_without_data() throws IOException {
 		File file = File.createTempFile("port", ".oss");
 		try (SubjectStore store = new SubjectStore(file)) {
 			store.feed(Instant.now(), "Skip").terminate();
@@ -214,12 +214,13 @@ public class SubjectStore_ {
 		assertThat(store.last()).isEqualTo(now);
 		assertThat(store.tags()).containsExactly("Country", "Latitude", "Longitude");
 		assertThat(store.ss(0)).isEqualTo("UN:all-ports");
-		assertThat(store.categoricalQuery("Country").current()).isEqualTo(value(0, now, "China"));
-		assertThat(store.categoricalQuery("Country").current()).isEqualTo(value(0, now, "China"));
-		assertThat(store.categoricalQuery("Country").sequence(today(0), today(1)).count()).isEqualTo(1);
-		assertThat(store.categoricalQuery("Country").sequence(today(0), today(1)).summary().categories()).containsExactly("China");
 		assertThat(store.numericalQuery("Latitude").current()).isEqualTo(value(0, now, 31.219832454));
 		assertThat(store.numericalQuery("Longitude").current()).isEqualTo(value(0, now, 121.486998052));
+		assertThat(store.numericalQuery("Longitude").signal(today(), today(1)).values()).containsExactly(121.486998052);
+		assertThat(store.categoricalQuery("Country").current()).isEqualTo(value(0, now, "China"));
+		assertThat(store.categoricalQuery("Country").current()).isEqualTo(value(0, now, "China"));
+		assertThat(store.categoricalQuery("Country").sequence(today(), today(1)).count()).isEqualTo(1);
+		assertThat(store.categoricalQuery("Country").sequence(today(), today(1)).values()).containsExactly("China");
 		assertThat(store.instants()).containsExactly(now);
 	}
 

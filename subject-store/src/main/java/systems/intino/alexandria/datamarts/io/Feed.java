@@ -5,8 +5,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
-import static systems.intino.alexandria.datamarts.model.TemporalReferences.Legacy;
-
 public final class Feed {
 	public final Instant instant;
 	public final String source;
@@ -28,10 +26,6 @@ public final class Feed {
 
 	public Object get(String tag) {
 		return facts.get(tag);
-	}
-
-	public boolean isLegacy() {
-		return instant.equals(Legacy);
 	}
 
 	public boolean isEmpty() {

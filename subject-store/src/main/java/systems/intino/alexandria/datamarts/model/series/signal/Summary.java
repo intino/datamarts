@@ -48,6 +48,7 @@ public class Summary {
 	}
 
 	public double range() {
+		if (max == null || min == null) return Double.NaN;
 		return max.value() - min.value();
 	}
 
