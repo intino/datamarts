@@ -22,11 +22,7 @@
 	</properties>
 
 	<build>
-		<outputDirectory>../../out/production/led</outputDirectory>
-		<testOutputDirectory>../../out/test/led</testOutputDirectory>
-		<directory>../../out/build/led</directory>
 		<plugins>
-
 			<plugin>
 				<artifactId>maven-clean-plugin</artifactId>
 				<version>3.0.0</version>
