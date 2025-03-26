@@ -18,37 +18,38 @@ import static systems.intino.alexandria.datamarts.model.TemporalReferences.BigBa
 import static systems.intino.alexandria.datamarts.model.TemporalReferences.Legacy;
 
 public class SubjectStore implements Closeable {
-	private final String name;
+	private final String id;
+	private final String type;
 	private final Registry registry;
 	private final TagSet tagSet;
 	private final Timeline timeline;
 
-	public SubjectStore(File file) {
-		this.name = withoutExtension(file.getName());
-		this.registry = new SqliteRegistry(file);
+	public SubjectStore(File file, String id) {
+		this.id = id;
+		this.type = withoutExtension(file.getName());
+		this.registry = new SqliteRegistry(file, "M" + id);
 		this.tagSet = new TagSet(registry.tags());
 		this.timeline = new Timeline(registry.instants());
 	}
 
-	public SubjectStore(String name) {
-		this.name = name;
-		this.registry = new SqliteRegistry();
+	public SubjectStore(String id) {
+		this.id = id;
+		this.type = "subject";
+		this.registry = new SqliteRegistry("M" + id);
 		this.tagSet = new TagSet(registry.tags());
 		this.timeline = new Timeline(registry.instants());
 	}
 
 	public String name() {
-		return name;
+		return id + ":" + type;
 	}
 
 	public String id() {
-		int index = name.indexOf('-');
-		return name.substring(index+1);
+		return id;
 	}
 
 	public String type() {
-		int index = name.indexOf('-');
-		return index > 0 ? name.substring(0, index) : "subject";
+		return type;
 	}
 
 	public int size() {
@@ -89,6 +90,16 @@ public class SubjectStore implements Closeable {
 
 	public String ss(int feed) {
 		return registry.ss(feed);
+	}
+
+	public Double currentNumber(String tag) {
+		Point<Double> current = numericalQuery(tag).current();
+		return current != null ? current.value() : null;
+	}
+
+	public String currentText(String tag) {
+		Point<String> current = categoricalQuery(tag).current();
+		return current != null ? current.value() : null;
 	}
 
 	public NumericalQuery numericalQuery(String tag) {
@@ -344,7 +355,7 @@ public class SubjectStore implements Closeable {
 
 	@Override
 	public String toString() {
-		return name;
+		return id;
 	}
 
 	@Override

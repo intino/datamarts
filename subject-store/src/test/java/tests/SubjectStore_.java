@@ -23,11 +23,11 @@ public class SubjectStore_ {
 
 	@Test
 	public void should_create_memory_databases() throws IOException {
-		try (SubjectStore store = new SubjectStore("patient-00000")) {
+		try (SubjectStore store = new SubjectStore("00000")) {
 			assertThat(store.size()).isEqualTo(0);
-			assertThat(store.name()).isEqualTo("patient-00000");
-			assertThat(store.type()).isEqualTo("patient");
+			assertThat(store.name()).isEqualTo("00000:subject");
 			assertThat(store.id()).isEqualTo("00000");
+			assertThat(store.type()).isEqualTo("subject");
 			store.feed(Instant.now(), "")
 					.add("weight", 82.5)
 					.terminate();
@@ -39,14 +39,15 @@ public class SubjectStore_ {
 	@SuppressWarnings("ResultOfMethodCallIgnored")
 	@Test
 	public void should_handle_empty_store() throws IOException {
-		File file = new File("sub-123.oss");
-		try (SubjectStore store = new SubjectStore(file)) {
-			assertThat(store.name()).isEqualTo("sub-123");
-			assertThat(store.type()).isEqualTo("sub");
-			assertThat(store.toString()).isEqualTo("sub-123");
+		File file = new File("patient.oss");
+		try (SubjectStore store = new SubjectStore(file, "123")) {
+			assertThat(store.id()).isEqualTo("123");
+			assertThat(store.type()).isEqualTo("patient");
+			assertThat(store.name()).isEqualTo("123:patient");
 			assertThat(store.size()).isEqualTo(0);
 			assertThat(store.exists("field")).isFalse();
-			assertThat(store.numericalQuery("field").current()).isNull();
+			assertThat(store.currentNumber("field")).isNull();
+			assertThat(store.currentText("field")).isNull();
 			//assertThat(store.numericalQuery("field").signal(store.first(), store.last())).isEmpty();
 			assertThat(store.categoricalQuery("field").current()).isNull();
 			//assertThat(store.categoricalQuery("field").sequence(store.first(), store.last())).isEmpty();
@@ -62,7 +63,7 @@ public class SubjectStore_ {
 	@Test
 	public void should_ignore_feed_without_data() throws IOException {
 		File file = File.createTempFile("port", ".oss");
-		try (SubjectStore store = new SubjectStore(file)) {
+		try (SubjectStore store = new SubjectStore(file, "00000")) {
 			store.feed(Instant.now(), "Skip").terminate();
 			assertThat(store.size()).isEqualTo(0);
 		}
@@ -70,12 +71,14 @@ public class SubjectStore_ {
 
 	@Test
 	public void should_return_most_recent_value_as_current() throws IOException {
-		File file = File.createTempFile("patient-", ".oss");
-		try (SubjectStore store = new SubjectStore(file)) {
+		File file = File.createTempFile("patient", ".oss");
+		try (SubjectStore store = new SubjectStore(file, "12345")) {
 			feed(store);
-			assertThat(store.type()).isEqualTo("patient");
-			Point<Double> actual = store.numericalQuery("Hemoglobin").current();
-			assertThat(actual.value()).isEqualTo(145L);
+			assertThat(store.type()).startsWith("patient");
+			assertThat(store.id()).isEqualTo("12345");
+			assertThat(store.currentNumber("hemoglobin")).isEqualTo(145.0);
+			Point<Double> actual = store.numericalQuery("hemoglobin").current();
+			assertThat(actual.value()).isEqualTo(145);
 			assertThat(store.legacyExists()).isTrue();
 			assertThat(store.bigbangExists()).isTrue();
 			assertThat(store.legacyPending()).isFalse();
@@ -86,8 +89,8 @@ public class SubjectStore_ {
 	@SuppressWarnings("ResultOfMethodCallIgnored")
 	@Test
 	public void should_dump_events() throws IOException {
-		File file = new File("patient-12345.oss");
-		try (SubjectStore store = new SubjectStore(file)) {
+		File file = new File("patient.oss");
+		try (SubjectStore store = new SubjectStore(file, "12345")) {
 			feed(store);
 			OutputStream os = new ByteArrayOutputStream();
 			store.dump(os);
@@ -96,22 +99,22 @@ public class SubjectStore_ {
 				ts=2025-03-25T00:00:00Z
 				ss=HMG-2
 				id=12345
-				Hemoglobin=145.0
+				hemoglobin=145.0
 				[patient]
 				ts=2025-03-20T00:00:00Z
 				ss=HMG-1
 				id=12345
-				Hemoglobin=130.0
+				hemoglobin=130.0
 				[patient]
 				ts=-314918-08-13T06:13:20Z
 				ss=HMG-B
 				id=12345
-				Hemoglobin=115.0
+				hemoglobin=115.0
 				[patient]
 				ts=-1899355-09-09T13:20:00Z
 				ss=HMG-L
 				id=12345
-				Hemoglobin=110.0
+				hemoglobin=110.0
 				"""
 			);
 		}
@@ -123,19 +126,19 @@ public class SubjectStore_ {
 	private static void feed(SubjectStore store) {
 		SubjectStore.Batch batch = store.batch();
 		batch.feed(day, "HMG-2")
-				.add("Hemoglobin", 145)
+				.add("hemoglobin", 145)
 				.terminate();
 
 		batch.feed(day.plus(-5, DAYS), "HMG-1")
-				.add("Hemoglobin", 130)
+				.add("hemoglobin", 130)
 				.terminate();
 
 		batch.feed(BigBang, "HMG-B")
-				.add("Hemoglobin", 115)
+				.add("hemoglobin", 115)
 				.terminate();
 
 		batch.feed(Legacy, "HMG-L")
-				.add("Hemoglobin", 110)
+				.add("hemoglobin", 110)
 				.terminate();
 
 		batch.terminate();
@@ -145,7 +148,7 @@ public class SubjectStore_ {
 	@Test
 	public void should_store_legacy_values() throws IOException {
 		File file = File.createTempFile("port", ".oss");
-		try (SubjectStore store = new SubjectStore(file)) {
+		try (SubjectStore store = new SubjectStore(file, "00000")) {
 			store.feed(Legacy, "UN:all-ports")
 					.add("Country", "China")
 					.add("Latitude", 31_219832454L)
@@ -153,7 +156,7 @@ public class SubjectStore_ {
 					.terminate();
 			test_stored_legacy_values(store);
 		}
-		try (SubjectStore store = new SubjectStore(file)) {
+		try (SubjectStore store = new SubjectStore(file, "00000")) {
 			test_stored_legacy_values(store);
 		}
 	}
@@ -195,7 +198,7 @@ public class SubjectStore_ {
 	@Test
 	public void should_store_features() throws IOException {
 		File file = File.createTempFile("port", ".oss");
-		try (SubjectStore store = new SubjectStore(file)) {
+		try (SubjectStore store = new SubjectStore(file, "00000")) {
 			store.feed(now, "UN:all-ports")
 					.add("Country", "China")
 					.add("Latitude", 31.219832454)
@@ -203,17 +206,19 @@ public class SubjectStore_ {
 					.terminate();
 			test_stored_features(store);
 		}
-		try (SubjectStore store = new SubjectStore(file)) {
+		try (SubjectStore store = new SubjectStore(file,"00000")) {
 			test_stored_features(store);
 		}
 	}
 
 	private static void test_stored_features(SubjectStore store) {
+		assertThat(store.id()).isEqualTo("00000");
 		assertThat(store.size()).isEqualTo(1);
 		assertThat(store.first()).isEqualTo(now);
 		assertThat(store.last()).isEqualTo(now);
 		assertThat(store.tags()).containsExactly("Country", "Latitude", "Longitude");
 		assertThat(store.ss(0)).isEqualTo("UN:all-ports");
+		assertThat(store.currentNumber("Latitude")).isEqualTo(31.219832454);
 		assertThat(store.numericalQuery("Latitude").current()).isEqualTo(value(0, now, 31.219832454));
 		assertThat(store.numericalQuery("Longitude").current()).isEqualTo(value(0, now, 121.486998052));
 		assertThat(store.numericalQuery("Longitude").signal(today(), today(1)).values()).containsExactly(121.486998052);
@@ -232,7 +237,7 @@ public class SubjectStore_ {
 	@Test
 	public void should_store_time_series() throws IOException {
 		File file = File.createTempFile("port", ".oss");
-		try (SubjectStore store = new SubjectStore(file)) {
+		try (SubjectStore store = new SubjectStore(file, "00000")) {
 			for (int i = 0; i < 10; i++) {
 				store.feed(today(i), "AIS:movements-" + i)
 						.add("Vessels", 1900 + i * 10)
@@ -241,7 +246,7 @@ public class SubjectStore_ {
 			}
 			test_stored_time_series(store);
 		}
-		try (SubjectStore store = new SubjectStore(file)) {
+		try (SubjectStore store = new SubjectStore(file, "00000")) {
 			test_stored_time_series(store);
 		}
 	}

@@ -18,27 +18,32 @@ import static java.sql.Types.*;
 public class SqliteRegistry implements Registry {
 	private final Connection connection;
 	private final StatementProvider statementProvider;
+	private final String name;
 	private int feedCount;
 	private int current;
 
 	static { loadDriver(); }
 
-	public SqliteRegistry() {
+	public SqliteRegistry(String name) {
 		try {
-			this.connection = ConnectionProvider.memory();
+			this.name = name;
+			this.connection = new ConnectionProvider().memory();
 			this.statementProvider = new StatementProvider();
 			this.feedCount = readFeedCount();
 			this.current = -1;
+			this.initTags();
 		} catch (SQLException e) {
 			throw new RuntimeException(e);
 		}
 	}
 
-	public SqliteRegistry(File file) {
+	public SqliteRegistry(File file, String name) {
 		try {
-			this.connection = isCreated(file) ? ConnectionProvider.open(file) : ConnectionProvider.create(file);
+			this.name = name;
+			this.connection = new ConnectionProvider().in(file);
 			this.statementProvider = new StatementProvider();
 			this.feedCount = readFeedCount();
+			this.initTags();
 		} catch (SQLException e) {
 			throw new RuntimeException(e);
 		}
@@ -188,6 +193,15 @@ public class SqliteRegistry implements Registry {
 		return statementProvider.get("select-all").executeQuery();
 	}
 
+	private void initTags() throws SQLException {
+		try (ResultSet rs = selectTags()) {
+			if (rs.next()) return;
+			insertTag(0, "ts");
+			insertTag(1, "ss");
+			connection.commit();
+		}
+	}
+
 	private ResultSet selectTags() throws SQLException {
 		return statementProvider.get("select-tags").executeQuery();
 	}
@@ -282,10 +296,6 @@ public class SqliteRegistry implements Registry {
 		}
 	}
 
-	private static boolean isCreated(File file) {
-		return file.exists() && file.length() > 0;
-	}
-
 	private static String labelOf(Instant value) {
 		if (value.equals(Legacy)) return "Legacy";
 		if (value.equals(BigBang)) return "Big Bang";
@@ -303,56 +313,52 @@ public class SqliteRegistry implements Registry {
 			throw new RuntimeException(e);
 		}
 	}
-	private static class ConnectionProvider {
+	private class ConnectionProvider {
 
 
-		private static final String InitDatabase = """
-					CREATE TABLE tags (
+		private static final String InitTables = """
+					CREATE TABLE IF NOT EXISTS tags (
 						tag INTEGER NOT NULL,
 						label TEXT,
 						feed INTEGER,
 						PRIMARY KEY (tag)
 					);
 				
-					CREATE TABLE map (
+					CREATE TABLE IF NOT EXISTS [map] (
 						feed INTEGER NOT NULL,
 						tag INTEGER NOT NULL,
 						num REAL,
 						txt TEXT,
 						PRIMARY KEY (feed, tag)
 					);
-					CREATE INDEX IF NOT EXISTS idx_tag ON map(tag);
-					CREATE INDEX IF NOT EXISTS idx_feed ON map(feed);
-					INSERT INTO tags (tag, label) VALUES (0, 'ts');
-					INSERT INTO tags (tag, label) VALUES (1, 'ss');
-					INSERT INTO map (tag, feed, num, txt) VALUES (-1, -1, 0, NULL);
+					CREATE INDEX IF NOT EXISTS idx_tag ON [map](tag);
+					CREATE INDEX IF NOT EXISTS idx_feed ON [map](feed);
+					INSERT INTO [map] (tag, feed, num, txt) SELECT -1, -1, 0, NULL WHERE NOT EXISTS (SELECT 1 FROM [map]);
 				""";
 
-		static Connection memory() throws SQLException {
+		Connection memory() throws SQLException {
 			Connection connection = DriverManager.getConnection("jdbc:sqlite::memory:");
 			connection.setAutoCommit(false);
-			Statement statement = connection.createStatement();
-			statement.executeUpdate(InitDatabase);
-			connection.commit();
+			initTables(connection);
 			return connection;
 		}
 
 
-		static Connection open(File file) throws SQLException {
+		Connection in(File file) throws SQLException {
 			Connection connection = DriverManager.getConnection("jdbc:sqlite:" + file.getAbsolutePath());
 			connection.setAutoCommit(false);
+			initTables(connection);
 			return connection;
 		}
 
-		static Connection create(File file) throws SQLException {
-			Connection connection = open(file);
+		private void initTables(Connection connection) throws SQLException {
 			Statement statement = connection.createStatement();
-			statement.executeUpdate(InitDatabase);
+			statement.executeUpdate(InitTables.replace("[map]", name));
 			connection.commit();
-			return connection;
 		}
 	}
-	class StatementProvider {
+
+	private class StatementProvider {
 
 		private final Map<String, PreparedStatement> statements;
 
@@ -363,16 +369,16 @@ public class SqliteRegistry implements Registry {
 		Map<String, PreparedStatement> statements() throws SQLException {
 			Map<String, PreparedStatement> statements = new HashMap<>();
 			statements.put("insert-tag", create("INSERT INTO tags (tag, label, feed) VALUES (?, ?, -1)"));
-			statements.put("insert-entry", create("INSERT INTO map (tag, feed, num, txt) VALUES (?, ?, ?, ?)"));
+			statements.put("insert-entry", create("INSERT INTO [map] (tag, feed, num, txt) VALUES (?, ?, ?, ?)"));
 			statements.put("update-tag-feed", create("UPDATE tags SET feed = ? WHERE tag = ?;"));
-			statements.put("update-feed", create("UPDATE map SET num = ? WHERE tag = -1 AND feed = -1;"));
-			statements.put("select-all", create("SELECT * FROM map ORDER BY feed, tag;"));
+			statements.put("update-feed", create("UPDATE [map] SET num = ? WHERE tag = -1 AND feed = -1;"));
+			statements.put("select-all", create("SELECT * FROM [map] ORDER BY feed, tag;"));
 			statements.put("select-tags", create("SELECT tag, label, feed FROM tags"));
-			statements.put("select-instants", create("SELECT feed, num FROM map WHERE tag = 0"));
-			statements.put("select-double-value", create("SELECT num FROM map WHERE tag = ? AND feed = ?"));
-			statements.put("select-double-values", create("SELECT feed, num FROM map WHERE tag = ? and feed BETWEEN ? AND ?"));
-			statements.put("select-string-value", create("SELECT txt FROM map WHERE tag = ? AND feed = ?"));
-			statements.put("select-string-values", create("SELECT feed, txt FROM map WHERE tag = ? and feed BETWEEN ? AND ?"));
+			statements.put("select-instants", create("SELECT feed, num FROM [map] WHERE tag = 0"));
+			statements.put("select-double-value", create("SELECT num FROM [map] WHERE tag = ? AND feed = ?"));
+			statements.put("select-double-values", create("SELECT feed, num FROM [map] WHERE tag = ? and feed BETWEEN ? AND ?"));
+			statements.put("select-string-value", create("SELECT txt FROM [map] WHERE tag = ? AND feed = ?"));
+			statements.put("select-string-values", create("SELECT feed, txt FROM [map] WHERE tag = ? and feed BETWEEN ? AND ?"));
 			return statements;
 		}
 
@@ -381,7 +387,7 @@ public class SqliteRegistry implements Registry {
 		}
 
 		private PreparedStatement create(String sql) throws SQLException {
-			return connection.prepareStatement(sql);
+			return connection.prepareStatement(sql.replace("[map]", name));
 		}
 
 
