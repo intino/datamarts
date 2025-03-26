@@ -4,7 +4,6 @@ import systems.intino.alexandria.datamarts.io.Registry;
 import systems.intino.alexandria.datamarts.model.Bundle;
 import systems.intino.alexandria.datamarts.SubjectStore.RegistryException;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.sql.*;
@@ -18,32 +17,20 @@ import static java.sql.Types.*;
 public class SqliteRegistry implements Registry {
 	private final Connection connection;
 	private final StatementProvider statementProvider;
-	private final String name;
+	private final String id;
 	private int feedCount;
 	private int current;
 
-	static { loadDriver(); }
 
-	public SqliteRegistry(String name) {
+	public SqliteRegistry(Connection connection, String id) {
 		try {
-			this.name = name;
-			this.connection = new ConnectionProvider().memory();
+			this.id = id;
+			this.connection = connection;
+			this.connection.setAutoCommit(false);
+			this.initTables();
 			this.statementProvider = new StatementProvider();
-			this.feedCount = readFeedCount();
-			this.current = -1;
 			this.initTags();
-		} catch (SQLException e) {
-			throw new RuntimeException(e);
-		}
-	}
-
-	public SqliteRegistry(File file, String name) {
-		try {
-			this.name = name;
-			this.connection = new ConnectionProvider().in(file);
-			this.statementProvider = new StatementProvider();
 			this.feedCount = readFeedCount();
-			this.initTags();
 		} catch (SQLException e) {
 			throw new RuntimeException(e);
 		}
@@ -193,6 +180,12 @@ public class SqliteRegistry implements Registry {
 		return statementProvider.get("select-all").executeQuery();
 	}
 
+	private void initTables() throws SQLException {
+		Statement statement = connection.createStatement();
+		statement.executeUpdate(InitTables.replace("[id]", id));
+		connection.commit();
+	}
+
 	private void initTags() throws SQLException {
 		try (ResultSet rs = selectTags()) {
 			if (rs.next()) return;
@@ -287,15 +280,6 @@ public class SqliteRegistry implements Registry {
 		statement.execute();
 	}
 
-	@Override
-	public void close()  {
-		try {
-			this.connection.close();
-		} catch (SQLException e) {
-			throw new RegistryException(e);
-		}
-	}
-
 	private static String labelOf(Instant value) {
 		if (value.equals(Legacy)) return "Legacy";
 		if (value.equals(BigBang)) return "Big Bang";
@@ -306,79 +290,48 @@ public class SqliteRegistry implements Registry {
 		return new SqlBundle(resultSet);
 	}
 
-	private static void loadDriver() {
-		try {
-			DriverManager.getConnection("jdbc:sqlite::memory:").close();
-		} catch (SQLException e) {
-			throw new RuntimeException(e);
-		}
-	}
-	private class ConnectionProvider {
-
-
-		private static final String InitTables = """
-					CREATE TABLE IF NOT EXISTS tags (
+	static final String InitTables = """
+					CREATE TABLE IF NOT EXISTS tags_[id] (
 						tag INTEGER NOT NULL,
 						label TEXT,
 						feed INTEGER,
 						PRIMARY KEY (tag)
 					);
 				
-					CREATE TABLE IF NOT EXISTS [map] (
+					CREATE TABLE IF NOT EXISTS map_[id] (
 						feed INTEGER NOT NULL,
 						tag INTEGER NOT NULL,
 						num REAL,
 						txt TEXT,
 						PRIMARY KEY (feed, tag)
 					);
-					CREATE INDEX IF NOT EXISTS idx_tag ON [map](tag);
-					CREATE INDEX IF NOT EXISTS idx_feed ON [map](feed);
-					INSERT INTO [map] (tag, feed, num, txt) SELECT -1, -1, 0, NULL WHERE NOT EXISTS (SELECT 1 FROM [map]);
+					CREATE INDEX IF NOT EXISTS idx_tag_[id] ON map_[id](tag);
+					CREATE INDEX IF NOT EXISTS idx_feed_[id] ON map_[id](feed);
+					INSERT INTO map_[id] (tag, feed, num, txt) SELECT -1, -1, 0, NULL WHERE NOT EXISTS (SELECT 1 FROM map_[id]);
 				""";
-
-		Connection memory() throws SQLException {
-			Connection connection = DriverManager.getConnection("jdbc:sqlite::memory:");
-			connection.setAutoCommit(false);
-			initTables(connection);
-			return connection;
-		}
-
-
-		Connection in(File file) throws SQLException {
-			Connection connection = DriverManager.getConnection("jdbc:sqlite:" + file.getAbsolutePath());
-			connection.setAutoCommit(false);
-			initTables(connection);
-			return connection;
-		}
-
-		private void initTables(Connection connection) throws SQLException {
-			Statement statement = connection.createStatement();
-			statement.executeUpdate(InitTables.replace("[map]", name));
-			connection.commit();
-		}
-	}
 
 	private class StatementProvider {
 
-		private final Map<String, PreparedStatement> statements;
+		final Map<String, PreparedStatement> statements;
 
 		StatementProvider() throws SQLException {
 			this.statements = statements();
 		}
 
+
 		Map<String, PreparedStatement> statements() throws SQLException {
 			Map<String, PreparedStatement> statements = new HashMap<>();
-			statements.put("insert-tag", create("INSERT INTO tags (tag, label, feed) VALUES (?, ?, -1)"));
-			statements.put("insert-entry", create("INSERT INTO [map] (tag, feed, num, txt) VALUES (?, ?, ?, ?)"));
-			statements.put("update-tag-feed", create("UPDATE tags SET feed = ? WHERE tag = ?;"));
-			statements.put("update-feed", create("UPDATE [map] SET num = ? WHERE tag = -1 AND feed = -1;"));
-			statements.put("select-all", create("SELECT * FROM [map] ORDER BY feed, tag;"));
-			statements.put("select-tags", create("SELECT tag, label, feed FROM tags"));
-			statements.put("select-instants", create("SELECT feed, num FROM [map] WHERE tag = 0"));
-			statements.put("select-double-value", create("SELECT num FROM [map] WHERE tag = ? AND feed = ?"));
-			statements.put("select-double-values", create("SELECT feed, num FROM [map] WHERE tag = ? and feed BETWEEN ? AND ?"));
-			statements.put("select-string-value", create("SELECT txt FROM [map] WHERE tag = ? AND feed = ?"));
-			statements.put("select-string-values", create("SELECT feed, txt FROM [map] WHERE tag = ? and feed BETWEEN ? AND ?"));
+			statements.put("insert-tag", create("INSERT INTO tags_[id] (tag, label, feed) VALUES (?, ?, -1)"));
+			statements.put("insert-entry", create("INSERT INTO map_[id] (tag, feed, num, txt) VALUES (?, ?, ?, ?)"));
+			statements.put("update-tag-feed", create("UPDATE tags_[id] SET feed = ? WHERE tag = ?;"));
+			statements.put("update-feed", create("UPDATE map_[id] SET num = ? WHERE tag = -1 AND feed = -1;"));
+			statements.put("select-all", create("SELECT * FROM map_[id] ORDER BY feed, tag;"));
+			statements.put("select-tags", create("SELECT tag, label, feed FROM tags_[id]"));
+			statements.put("select-instants", create("SELECT feed, num FROM map_[id] WHERE tag = 0"));
+			statements.put("select-double-value", create("SELECT num FROM map_[id] WHERE tag = ? AND feed = ?"));
+			statements.put("select-double-values", create("SELECT feed, num FROM map_[id] WHERE tag = ? and feed BETWEEN ? AND ?"));
+			statements.put("select-string-value", create("SELECT txt FROM map_[id] WHERE tag = ? AND feed = ?"));
+			statements.put("select-string-values", create("SELECT feed, txt FROM map_[id] WHERE tag = ? and feed BETWEEN ? AND ?"));
 			return statements;
 		}
 
@@ -387,7 +340,7 @@ public class SqliteRegistry implements Registry {
 		}
 
 		private PreparedStatement create(String sql) throws SQLException {
-			return connection.prepareStatement(sql.replace("[map]", name));
+			return connection.prepareStatement(sql.replace("[id]", id));
 		}
 
 

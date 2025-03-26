@@ -2,11 +2,10 @@ package systems.intino.alexandria.datamarts.io;
 
 import systems.intino.alexandria.datamarts.model.Bundle;
 
-import java.io.Closeable;
 import java.io.OutputStream;
 import java.util.Map;
 
-public interface Registry extends Closeable {
+public interface Registry {
 
 	int size();
 

@@ -2,6 +2,7 @@ package systems.intino.alexandria.datamarts;
 
 import systems.intino.alexandria.datamarts.io.Feed;
 import systems.intino.alexandria.datamarts.io.Registry;
+import systems.intino.alexandria.datamarts.io.registries.SqlConnection;
 import systems.intino.alexandria.datamarts.model.Bundle;
 import systems.intino.alexandria.datamarts.model.TemporalReferences;
 import systems.intino.alexandria.datamarts.model.Point;
@@ -10,6 +11,8 @@ import systems.intino.alexandria.datamarts.model.series.Sequence;
 import systems.intino.alexandria.datamarts.model.series.Signal;
 
 import java.io.*;
+import java.sql.Connection;
+import java.sql.SQLException;
 import java.time.Instant;
 import java.util.*;
 
@@ -23,21 +26,37 @@ public class SubjectStore implements Closeable {
 	private final Registry registry;
 	private final TagSet tagSet;
 	private final Timeline timeline;
+	private final Connection connection;
+	private final boolean closeable;
+
+	public SubjectStore(Connection connection, String id) {
+		this.id = id;
+		this.type = "subject";
+		this.connection = connection;
+		this.registry = new SqliteRegistry(connection, id);
+		this.tagSet = new TagSet(registry.tags());
+		this.timeline = new Timeline(registry.instants());
+		this.closeable = false;
+	}
 
 	public SubjectStore(File file, String id) {
 		this.id = id;
 		this.type = withoutExtension(file.getName());
-		this.registry = new SqliteRegistry(file, "M" + id);
+		this.connection = SqlConnection.from(file);
+		this.registry = new SqliteRegistry(connection, id);
 		this.tagSet = new TagSet(registry.tags());
 		this.timeline = new Timeline(registry.instants());
+		this.closeable = true;
 	}
 
 	public SubjectStore(String id) {
 		this.id = id;
 		this.type = "subject";
-		this.registry = new SqliteRegistry("M" + id);
+		this.connection = SqlConnection.inMemory();
+		this.registry = new SqliteRegistry(connection, id);
 		this.tagSet = new TagSet(registry.tags());
 		this.timeline = new Timeline(registry.instants());
+		this.closeable = true;
 	}
 
 	public String name() {
@@ -359,8 +378,13 @@ public class SubjectStore implements Closeable {
 	}
 
 	@Override
-	public void close() throws IOException {
-		registry.close();
+	public void close() {
+		try {
+			if (closeable)
+				connection.close();
+		} catch (SQLException e) {
+			throw new RuntimeException(e);
+		}
 	}
 
 	private static String withoutExtension(String name) {

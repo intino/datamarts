@@ -1,5 +1,6 @@
 package tests;
 
+import systems.intino.alexandria.datamarts.io.registries.SqlConnection;
 import systems.intino.alexandria.datamarts.model.Point;
 import systems.intino.alexandria.datamarts.SubjectStore;
 import org.junit.Test;
@@ -8,6 +9,8 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.sql.Connection;
+import java.sql.SQLException;
 import java.time.Instant;
 
 import static java.time.temporal.ChronoUnit.DAYS;
@@ -266,5 +269,31 @@ public class SubjectStore_ {
 		assertThat(store.categoricalQuery("State").sequence(today(0), today(10)).summary().mode()).isEqualTo("E");
 	}
 
-
+	@SuppressWarnings("ResultOfMethodCallIgnored")
+	@Test
+	public void name() throws SQLException {
+		File file = new File("subjects.oss");
+		Connection connection = SqlConnection.from(file);
+		try {
+			SubjectStore[] stores = new SubjectStore[]{
+					new SubjectStore(connection, "00001"),
+					new SubjectStore(connection, "00002"),
+					new SubjectStore(connection, "00003"),
+					new SubjectStore(connection, "00004")
+			};
+			for (SubjectStore store : stores) {
+				for (int i = 0; i < 10; i++) {
+					store.feed(today(i), "AIS:movements-" + i)
+							.add("Vessels", 1900 + i * 10)
+							.add("State", categories.substring(i, i + 1))
+							.terminate();
+				}
+				test_stored_time_series(store);
+			}
+		}
+		finally {
+			connection.close();
+			file.delete();
+		}
+	}
 }
