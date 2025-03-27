@@ -11,8 +11,43 @@
 	<modules>
 		<module>subject-store</module>
 		<module>led</module>
+		<module>zet</module>
 	</modules>
 
+	<developers>
+		<developer>
+			<id>josejuanhernandez</id>
+			<name>Jose Juan Hernandez</name>
+			<email>josejuanhernandez@gmail.com</email>
+			<url>https://github.com/josejuanhernandez</url>
+			<organization>intino.systems</organization>
+			<organizationUrl>https://www.intino.systems</organizationUrl>
+		</developer>
+		<developer>
+			<id>octavioroncal</id>
+			<name>Octavio Roncal</name>
+			<email>octavioroncal11@gmail.com</email>
+			<url>https://github.com/octavioroncal</url>
+			<organization>intino.systems</organization>
+			<organizationUrl>https://www.intino.systems</organizationUrl>
+		</developer>
+	</developers>
+
+	<scm>
+		<url>https://github.com/intino/datamarts.git</url>
+		<connection>scm:git:https://github.com/intino/datamarts.git</connection>
+		<developerConnection>scm:git@github.com:intino/datamarts.git</developerConnection>
+		<tag>HEAD</tag>
+	</scm>
+
+	<url>https://github.com/intino/datamarts</url>
+	<licenses>
+		<license>
+			<name>The Apache License, Version 2.0</name>
+			<url>https://www.apache.org/licenses/LICENSE-2.0.txt</url>
+			<distribution>repo</distribution>
+		</license>
+	</licenses>
 	<properties>
 		<maven.compiler.source>21</maven.compiler.source>
 		<maven.compiler.target>21</maven.compiler.target>
