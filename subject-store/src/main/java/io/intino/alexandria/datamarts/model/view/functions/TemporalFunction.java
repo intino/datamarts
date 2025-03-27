@@ -2,11 +2,14 @@ package io.intino.alexandria.datamarts.model.view.functions;
 
 import java.time.*;
 import java.time.format.DateTimeFormatter;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.function.Function;
 
 import static java.time.ZoneOffset.UTC;
 
 public interface TemporalFunction extends Function<Instant, Object> {
+
 	TemporalFunction DayOfWeek = ts-> zdt(ts).getDayOfWeek().getValue();
 	TemporalFunction DayOfMonth = ts-> zdt(ts).getDayOfMonth();
 	TemporalFunction MonthOfYear = ts-> zdt(ts).getMonthValue();
@@ -29,6 +32,28 @@ public interface TemporalFunction extends Function<Instant, Object> {
 
 	private static DateTimeFormatter with(String pattern) {
 		return DateTimeFormatter.ofPattern(pattern);
+	}
+
+	Map<String, TemporalFunction> FUNCTIONS_MAP = new HashMap<>() {{
+		put("DAYOFWEEK", DayOfWeek);
+		put("DAYOFMONTH", DayOfMonth);
+		put("MONTHOFYEAR", MonthOfYear);
+		put("QUARTEROFYEAR", QuarterOfYear);
+		put("YEAR", Year);
+		put("YEARQUARTER", YearQuarter);
+		put("YEARMONTH", YearMonth);
+		put("YEARMONTHDAY", YearMonthDay);
+		put("YEARMONTHDAYHOUR", YearMonthDayHour);
+		put("YEARMONTHDAYHOURMINUTE", YearMonthDayHourMinute);
+		put("YEARMONTHDAYHOURMINUTESECOND", YearMonthDayHourMinuteSecond);
+	}};
+
+	 static TemporalFunction fromString(String functionName) {
+		TemporalFunction function = FUNCTIONS_MAP.get(functionName.toUpperCase());
+		if (function == null) {
+			throw new IllegalArgumentException("Unknown Function: " + functionName);
+		}
+		return function;
 	}
 
 }
