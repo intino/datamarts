@@ -3,20 +3,15 @@
 		 xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 		 xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
-	<parent>
-		<groupId>systems.intino</groupId>
-		<artifactId>datamarts</artifactId>
-		<version>1.0.0</version>
-	</parent>
 
 	<groupId>systems.intino.datamarts</groupId>
 	<artifactId>subject-store</artifactId>
-	<version>1.0.0</version>
+	<version>1.0.1</version>
 	<description>SubjectStore is a data management library for tracking time-stamped attributes associated with a
 		subject, enabling the integration of partial and dynamic data from multiple sources without enforcing a rigid
 		data schema.
 	</description>
-	<url>https://github.com/intino/subject-store</url>
+	<url>https://github.com/intino/datamarts</url>
 	<licenses>
 		<license>
 			<name>The Apache License, Version 2.0</name>
@@ -32,7 +27,7 @@
 			<email>josejuanhernandez@gmail.com</email>
 			<url>https://github.com/josejuanhernandez</url>
 			<organization>intino.systems</organization>
-			<organizationUrl>https://www.intino.io</organizationUrl>
+			<organizationUrl>https://www.intino.systems</organizationUrl>
 		</developer>
 		<developer>
 			<id>octavioroncal</id>
@@ -40,14 +35,14 @@
 			<email>octavioroncal11@gmail.com</email>
 			<url>https://github.com/octavioroncal</url>
 			<organization>intino.systems</organization>
-			<organizationUrl>https://www.intino.io</organizationUrl>
+			<organizationUrl>https://www.intino.systems</organizationUrl>
 		</developer>
 	</developers>
 
 	<scm>
-		<url>https://github.com/tuusuario/tu-proyecto</url>
-		<connection>scm:git:https://github.com/intino/subject-store.git</connection>
-		<developerConnection>scm:git@github.com:intino/subject-store.git</developerConnection>
+		<url>https://github.com/intino/datamarts.git</url>
+		<connection>scm:git:https://github.com/intino/datamarts.git</connection>
+		<developerConnection>scm:git@github.com:intino/datamarts.git</developerConnection>
 		<tag>HEAD</tag>
 	</scm>
 	<properties>
@@ -55,7 +50,6 @@
 		<maven.compiler.target>21</maven.compiler.target>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 	</properties>
-
 
 	<build>
 		<plugins>
