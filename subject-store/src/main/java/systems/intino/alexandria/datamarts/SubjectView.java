@@ -1,12 +1,18 @@
 package systems.intino.alexandria.datamarts;
 
+import systems.intino.alexandria.datamarts.calculator.VectorCalculator;
+import systems.intino.alexandria.datamarts.model.Filter;
 import systems.intino.alexandria.datamarts.model.TemporalReferences;
-import systems.intino.alexandria.datamarts.model.view.Column.Categorical;
-import systems.intino.alexandria.datamarts.model.view.Column.Numerical;
+import systems.intino.alexandria.datamarts.model.vectors.DoubleVector;
+import systems.intino.alexandria.datamarts.model.vectors.ObjectVector;
 import systems.intino.alexandria.datamarts.model.view.Format;
 import systems.intino.alexandria.datamarts.model.view.Column;
 import systems.intino.alexandria.datamarts.model.series.Sequence;
 import systems.intino.alexandria.datamarts.model.series.Signal;
+import systems.intino.alexandria.datamarts.model.Vector;
+import systems.intino.alexandria.datamarts.model.view.functions.CategoricalFunction;
+import systems.intino.alexandria.datamarts.model.view.functions.NumericalFunction;
+import systems.intino.alexandria.datamarts.model.view.functions.TemporalFunction;
 
 import java.io.*;
 import java.time.*;
@@ -14,22 +20,26 @@ import java.time.temporal.TemporalAmount;
 import java.util.*;
 import java.util.stream.Stream;
 
-import static java.util.stream.Collectors.joining;
-
-public class SubjectView implements Iterable<SubjectView.Row> {
-	private final Format format;
-	private final Row[] rows;
+public class SubjectView {
 	private final SubjectStore store;
+	private final Format format;
+	private final List<Instant> instants;
+	private final Map<String, Vector<?>> vectors;
 
 	public SubjectView(SubjectStore store, Format format) {
 		this.store = store;
 		this.format = format;
-		this.rows = createRows();
+		this.instants = instants(format.from(), format.to(), format.duration());
+		this.vectors = new HashMap<>();
 		this.build();
 	}
 
 	public List<Column> columns() {
 		return format.columns();
+	}
+
+	private String column(int i) {
+		return format.columns().get(i).name;
 	}
 
 	public Instant from() {
@@ -44,8 +54,8 @@ public class SubjectView implements Iterable<SubjectView.Row> {
 		return format.duration();
 	}
 
-	public Row[] rows() {
-		return rows;
+	public int rows() {
+		return instants.size();
 	}
 
 	public void export(File file) throws IOException {
@@ -65,62 +75,97 @@ public class SubjectView implements Iterable<SubjectView.Row> {
 	}
 
 	private void build(Column column) {
-		switch (column.type()) {
-			case Temporal -> build((Column.Temporal) column);
-			case Numerical -> build((Numerical) column);
-			case Categorical -> build((Categorical) column);
+		vectors.put(column.name, apply(calculate(column), column.filters));
+	}
+
+	private static Vector<?> apply(Vector<?> input, List<Filter> filters) {
+		return input instanceof DoubleVector vector ?
+				apply(vector.values(), filters) :
+				input;
+	}
+
+	private static DoubleVector apply(double[] values, List<Filter> filters) {
+		for (Filter filter : filters)
+			values = filter.apply(values);
+		return new DoubleVector(values);
+	}
+
+	private Vector<?> calculate(Column column) {
+		return switch (column.type) {
+			case Temporal -> calculate(TemporalFunction.of(column.function), TemporalFunction.isNumeric(column.function));
+			case Numerical -> calculate(NumericalFunction.of(column.function), column.attribute);
+			case Categorical -> calculate(CategoricalFunction.of(column.function), column.attribute, CategoricalFunction.isNumeric(column.function));
+			case Formula -> calculate(column.function);
+		};
+	}
+
+	private Vector<?> calculate(TemporalFunction temporalFunction, boolean isNumeric) {
+		Stream<Object> values = instants.stream()
+				.map(temporalFunction);
+		return isNumeric ?
+				toDoubleVector(values) :
+				toObjectVector(values);
+	}
+
+	private Vector<?> calculate(NumericalFunction function, String attribute) {
+		Signal signal = store.numericalQuery(attribute).signal(from(), to());
+		Signal[] segments = signal.segments(duration());
+		double[] values = Arrays.stream(segments).map(function).mapToDouble(v -> v).toArray();
+		return new DoubleVector(values);
+	}
+
+	private Vector<?> calculate(CategoricalFunction function, String attribute, boolean isNumeric) {
+		Sequence sequence = store.categoricalQuery(attribute).sequence(from(), to());
+		Sequence[] segments = sequence.segments(duration());
+		Stream<Object> values = Arrays.stream(segments).map(function);
+		return isNumeric ?
+				toDoubleVector(values) :
+				toObjectVector(values);
+	}
+
+	private Vector<?> toDoubleVector(Stream<Object> values) {
+		return new DoubleVector(values.mapToDouble(v-> (double) v).toArray());
+	}
+
+	private Vector<?> toObjectVector(Stream<Object> values) {
+		return new ObjectVector(values.toArray(Object[]::new));
+	}
+
+	private Vector<?> calculate(String formula) {
+		VectorCalculator calculator = new VectorCalculator(rows());
+		for (String name : vectors.keySet()) {
+			Vector<?> vector = vectors.get(name);
+			if (vector instanceof DoubleVector v) calculator.add(name, v);
 		}
-	}
-
-	private void build(Column.Temporal column) {
-		for (Row row : rows)
-			row.add(column.function().apply(row.instant));
-	}
-
-	private void build(Numerical column) {
-		Signal signal = store.numericalQuery(column.name()).signal(from(), to());
-		build(signal.segments(duration()), column);
-	}
-
-	private void build(Categorical column) {
-		Sequence sequence = store.categoricalQuery(column.name()).sequence(from(), to());
-		build(sequence.segments(duration()), column);
-	}
-
-	private void build(Signal[] signals, Numerical column) {
-		for (int i = 0; i < rows.length; i++)
-			rows[i].add(column.apply(signals[i]));
-	}
-
-	private void build(Sequence[] sequences, Categorical column) {
-		for (int i = 0; i < rows.length; i++)
-			rows[i].add(column.apply(sequences[i]));
+		return calculator.calculate(formula);
 	}
 
 	private String tsv() {
-		return Arrays.stream(rows)
-				.map(this::tsv)
-				.collect(joining("\n"));
+		StringBuilder sb = new StringBuilder();
+		for (int i = 0; i < rows(); i++) {
+			StringJoiner row = new StringJoiner("\t");
+			for (int j = 0; j < columns().size(); j++)
+				row.add(String.valueOf(value(i, j)));
+			sb.append(row).append('\n');
+		}
+		return sb.toString();
 	}
 
-	private String tsv(Row row) {
-		return row.values().stream()
-				.map(this::tsv)
-				.collect(joining("\t"));
+	private Object value(int i, int j) {
+		Object o = vectors.get(column(j)).get(i);
+		return isEmpty(o) ? "" : o;
 	}
 
-	private String tsv(Object value) {
-		return value != null ? value.toString() : "";
+	private boolean isEmpty(Object o) {
+		if (o == null) return true;
+		if (o instanceof Double d) return Double.isNaN(d);
+		return false;
 	}
 
-	private Row[] createRows() {
-		return instants()
-				.map(Row::new)
-				.toArray(Row[]::new);
-	}
-
-	private Stream<Instant> instants() {
-		return TemporalReferences.iterate(format.from(), format.to(), format.duration());
+	private static List<Instant> instants(Instant from, Instant instant, TemporalAmount duration) {
+		return TemporalReferences
+				.iterate(from, instant, duration)
+				.toList();
 	}
 
 	@Override
@@ -128,65 +173,6 @@ public class SubjectView implements Iterable<SubjectView.Row> {
 		return "Table(" + format + ")";
 	}
 
-	@Override
-	public Iterator<Row> iterator() {
-		return Arrays.asList(rows).iterator();
-	}
 
-	public SubjectView normalize(int column) {
-		normalize(column, rangeOf(column));
-		return this;
-	}
-
-	private void normalize(int column, double range) {
-		for (Row row : rows) {
-			Object object = row.values.get(column);
-			if (object instanceof Number number) {
-				double value = number.doubleValue();
-				row.values.set(column, value / range);
-			}
-		}
-	}
-
-	private double rangeOf(int i) {
-		double min = Double.POSITIVE_INFINITY;
-		double max = Double.NEGATIVE_INFINITY;
-		for (Row row : rows) {
-			Object object = row.values.get(i);
-			if (object instanceof Number number) {
-				double value = number.doubleValue();
-				min = Math.min(min, value);
-				max = Math.max(max, value);
-			}
-		}
-		return max - min;
-	}
-
-	public static class Row {
-		private final Instant instant;
-		private final List<Object> values;
-
-		public Row(Instant instant) {
-			this.instant = instant;
-			this.values = new ArrayList<>();
-		}
-
-		public Instant instant() {
-			return instant;
-		}
-
-		public List<Object> values() {
-			return values;
-		}
-
-		public void add(Object value) {
-			values.add(value);
-		}
-
-		@Override
-		public String toString() {
-			return "Row(" + instant + ")";
-		}
-	}
 
 }

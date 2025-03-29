@@ -1,6 +1,6 @@
 package systems.intino.alexandria.datamarts.io.registries;
 
-import systems.intino.alexandria.datamarts.model.Bundle;
+import systems.intino.alexandria.datamarts.io.Bundle;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;

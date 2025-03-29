@@ -1,4 +1,4 @@
-package systems.intino.alexandria.datamarts.model;
+package systems.intino.alexandria.datamarts.io;
 
 import java.time.Instant;
 

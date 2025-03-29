@@ -1,7 +1,7 @@
 package systems.intino.alexandria.datamarts.io.registries;
 
 import systems.intino.alexandria.datamarts.io.Registry;
-import systems.intino.alexandria.datamarts.model.Bundle;
+import systems.intino.alexandria.datamarts.io.Bundle;
 import systems.intino.alexandria.datamarts.SubjectStore.RegistryException;
 
 import java.io.IOException;

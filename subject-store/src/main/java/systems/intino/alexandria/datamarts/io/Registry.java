@@ -1,7 +1,5 @@
 package systems.intino.alexandria.datamarts.io;
 
-import systems.intino.alexandria.datamarts.model.Bundle;
-
 import java.io.OutputStream;
 import java.util.Map;
 

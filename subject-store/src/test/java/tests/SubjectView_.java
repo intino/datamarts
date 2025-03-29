@@ -2,6 +2,7 @@ package tests;
 
 import systems.intino.alexandria.datamarts.SubjectView;
 import systems.intino.alexandria.datamarts.SubjectStore;
+import systems.intino.alexandria.datamarts.model.filters.MinMaxNormalizationFilter;
 import systems.intino.alexandria.datamarts.model.view.Column;
 import systems.intino.alexandria.datamarts.model.view.Format;
 import org.junit.Test;
@@ -14,20 +15,17 @@ import java.time.Instant;
 
 import static java.time.temporal.ChronoUnit.*;
 import static org.assertj.core.api.Assertions.assertThat;
-import static systems.intino.alexandria.datamarts.model.view.functions.CategoricalFunction.Mode;
-import static systems.intino.alexandria.datamarts.model.view.functions.NumericalFunction.*;
-import static systems.intino.alexandria.datamarts.model.view.functions.TemporalFunction.*;
 
 @SuppressWarnings("NewClassNamingConvention")
 public class SubjectView_ {
 	private final static Instant from = Instant.parse("2025-01-01T00:00:00Z");
 	private final static Instant to = Instant.parse("2025-02-01T00:00:00Z");
 	private final static String expected = """
-		1	1	0.0	0.0				20250101
-		8	1	1.0	24.0	20.0	28.0	cloudy	20250108
-		15	1	0.0	0.0				20250115
-		22	1	0.0	0.0				20250122
-		29	1	0.75	18.0	18.0	18.0	rain	20250129
+		2025	1	1	0.0	0.0	0.0			0.0		99.0
+		2025	1	8	2.0	48.0	1.0	28.0	cloudy	1.0	24.0	99.0
+		2025	1	15	0.0	0.0	0.0			0.0		99.0
+		2025	1	22	0.0	0.0	0.0			0.0		99.0
+		2025	1	29	1.0	18.0	0.375	18.0	rain	1.0	18.0	99.0
 		""";
 
 	@Test
@@ -35,18 +33,21 @@ public class SubjectView_ {
 		try (SubjectStore store = new SubjectStore(File.createTempFile("xyz", ":patient.oss"), "map")) {
 			feed(store);
 			Format format = new Format(from, to, Duration.ofDays(7));
-			format.add(new Column.Temporal(DayOfMonth));
-			format.add(new Column.Temporal(MonthOfYear));
-			format.add(new Column.Numerical("temperature", Average));
-			format.add(new Column.Numerical("temperature", Average));
-			format.add(new Column.Numerical("temperature", First));
-			format.add(new Column.Numerical("temperature", Last));
-			format.add(new Column.Categorical("sky", Mode));
-			format.add(new Column.Temporal(YearMonthDay));
-			SubjectView table = new SubjectView(store, format).normalize(2);
+			format.add(new Column("A=year"));
+			format.add(new Column("B=month-of-year"));
+			format.add(new Column("C=day-of-month"));
+			format.add(new Column("D=count:temperature"));
+			format.add(new Column("E=sum:temperature"));
+			format.add(new Column("F=sum:temperature").add(new MinMaxNormalizationFilter()));
+			format.add(new Column("G=last:temperature"));
+			format.add(new Column("H=mode:sky"));
+			format.add(new Column("I=count:sky"));
+			format.add(new Column("J=E/D"));
+			format.add(new Column("K=99"));
+			SubjectView table = new SubjectView(store, format);
 			ByteArrayOutputStream os = new ByteArrayOutputStream();
 			table.export(os);
-			assertThat(os.toString()).isEqualTo(expected.trim());
+			assertThat(os.toString()).isEqualTo(expected);
 		}
 	}
 

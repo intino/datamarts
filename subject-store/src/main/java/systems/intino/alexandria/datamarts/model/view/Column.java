@@ -1,53 +1,59 @@
 package systems.intino.alexandria.datamarts.model.view;
 
-import systems.intino.alexandria.datamarts.model.series.Sequence;
-import systems.intino.alexandria.datamarts.model.series.Signal;
+import systems.intino.alexandria.datamarts.model.Filter;
 import systems.intino.alexandria.datamarts.model.view.functions.CategoricalFunction;
 import systems.intino.alexandria.datamarts.model.view.functions.NumericalFunction;
 import systems.intino.alexandria.datamarts.model.view.functions.TemporalFunction;
 
-public interface Column {
-	String name();
-	Type type();
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
-	record Temporal(TemporalFunction function) implements Column {
-		@Override
-		public String name() {
-			return "";
-		}
+public class Column {
+	public final String name;
+	public final String function;
+	public final String attribute;
+	public final Type type;
+	public final List<Filter> filters;
 
-		@Override
-		public Type type() {
-			return Type.Temporal;
-		}
-
+	public Column(String definition) {
+		this(map(definition));
 	}
 
-	record Numerical(String name, NumericalFunction function) implements Column {
-		@Override
-		public Type type() {
-			return Type.Numerical;
-		}
-
-		public Object apply(Signal signal) {
-			return function.apply(signal);
-		}
-
+	private Column(Map<String,String> definition) {
+		this.name = definition.get("name");
+		this.function = definition.get("function");
+		this.attribute = definition.get("attribute");
+		this.type = typeIn(function);
+		this.filters = new ArrayList<>();
 	}
 
-	record Categorical(String name, CategoricalFunction function) implements Column {
-		@Override
-		public Type type() {
-			return Type.Categorical;
-		}
+	private static Map<String, String> map(String definition) {
+		String[] nameAndRest = definition.split("=", 2);
+		String[] functionAndAttribute = nameAndRest[1].split(":", 2);
 
-		public Object apply(Sequence sequence) {
-			return function.apply(sequence);
-		}
+		Map<String, String> result = new HashMap<>();
+		result.put("name", nameAndRest[0]);
+		result.put("function", functionAndAttribute[0]);
+		result.put("attribute", functionAndAttribute.length > 1 ? functionAndAttribute[1] : null);
+		return result;
 	}
 
-	enum Type {
-		Temporal, Numerical, Categorical
+	private static Type typeIn(String function) {
+		if (TemporalFunction.contains(function)) return Type.Temporal;
+		if (NumericalFunction.contains(function)) return Type.Numerical;
+		if (CategoricalFunction.contains(function)) return Type.Categorical;
+		return Type.Formula;
+	}
+
+	public Column add(Filter filter) {
+		filters.add(filter);
+		return this;
+	}
+
+	public enum Type {
+		Temporal, Numerical, Categorical, Formula
 	}
 
 }

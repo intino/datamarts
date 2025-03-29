@@ -1,19 +1,39 @@
 package systems.intino.alexandria.datamarts.model.view.functions;
 
-import systems.intino.alexandria.datamarts.model.Series;
 import systems.intino.alexandria.datamarts.model.series.Signal;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.function.Function;
 
-public interface NumericalFunction extends Function<Signal, Object> {
-	NumericalFunction Count = Series::count;
-	NumericalFunction Sum = s -> s.summary().sum();
-	NumericalFunction Average = s -> s.summary().mean();
-	NumericalFunction StandardDeviation = s -> s.isEmpty() ? "" : s.summary().sd();
-	NumericalFunction First = s -> s.isEmpty() ? "" : s.summary().first().value();
-	NumericalFunction Last = s -> s.isEmpty() ? "" : s.summary().last().value();
-	NumericalFunction Min = s -> s.isEmpty() ? "" : s.summary().min().value();
-	NumericalFunction Max = s -> s.isEmpty() ? "" : s.summary().max().value();
-	NumericalFunction TsMin = s -> s.isEmpty() ? "" : s.summary().min().instant();
-	NumericalFunction TsMax = s -> s.isEmpty() ? "" : s.summary().max().instant();
+import static java.lang.Double.NaN;
+
+public interface NumericalFunction extends Function<Signal, Double> {
+	Map<String, NumericalFunction> map = create();
+
+	private static Map<String, NumericalFunction> create() {
+		Map<String, NumericalFunction> map = new HashMap<>();
+		map.put("count", s -> (double) s.count());
+		map.put("sum", s -> s.summary().sum());
+		map.put("average", s -> s.summary().mean());
+		map.put("sd", s -> s.isEmpty() ? NaN : s.summary().sd());
+		map.put("standard-deviation", s -> map.get("sd").apply(s));
+		map.put("first", s -> s.isEmpty() ? NaN : s.summary().first().value());
+		map.put("last", s -> s.isEmpty() ? NaN : s.summary().last().value());
+		map.put("min", s -> s.isEmpty() ? NaN : s.summary().min().value());
+		map.put("max", s -> s.isEmpty() ? NaN : s.summary().max().value());
+		return map;
+	}
+
+	static boolean contains(String function) {
+		return map.containsKey(function);
+	}
+
+	static NumericalFunction of(String name) {
+		if (!map.containsKey(name)) throw new RuntimeException("Unknown function: " + name);
+		return map.get(name);
+	}
+
+
+
 }

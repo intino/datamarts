@@ -3,7 +3,7 @@ package systems.intino.alexandria.datamarts;
 import systems.intino.alexandria.datamarts.io.Feed;
 import systems.intino.alexandria.datamarts.io.Registry;
 import systems.intino.alexandria.datamarts.io.registries.SqlConnection;
-import systems.intino.alexandria.datamarts.model.Bundle;
+import systems.intino.alexandria.datamarts.io.Bundle;
 import systems.intino.alexandria.datamarts.model.TemporalReferences;
 import systems.intino.alexandria.datamarts.model.Point;
 import systems.intino.alexandria.datamarts.io.registries.SqliteRegistry;
