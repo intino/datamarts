@@ -116,10 +116,7 @@ public class Parser {
 	}
 
 	private Expression unaryExpressionWith(Operator operator) {
-		return switch (operator) {
-			case Factorial -> Factorial.with(output.pop());
-			default -> null;
-		};
+		return operator == Operator.Factorial ? Factorial.with(output.pop()) : null;
 	}
 
 	private Expression binaryExpressionWith(Operator operator) {
@@ -160,10 +157,6 @@ public class Parser {
 
 		public enum Type {
 			Binary, Unary
-		}
-
-		public enum Position {
-			Prefix, Infix, Suffix
 		}
 
 	}

@@ -92,30 +92,27 @@ public class SubjectView {
 
 	private Vector<?> calculate(Column column) {
 		return switch (column.type) {
-			case Temporal -> calculate(TemporalFunction.of(column.function), TemporalFunction.isNumeric(column.function));
+			case Temporal -> calculate(TemporalFunction.of(column.function));
 			case Numerical -> calculate(NumericalFunction.of(column.function), column.attribute);
 			case Categorical -> calculate(CategoricalFunction.of(column.function), column.attribute, CategoricalFunction.isNumeric(column.function));
 			case Formula -> calculate(column.function);
 		};
 	}
 
-	private Vector<?> calculate(TemporalFunction temporalFunction, boolean isNumeric) {
-		Stream<Object> values = instants.stream()
-				.map(temporalFunction);
-		return isNumeric ?
-				toDoubleVector(values) :
-				toObjectVector(values);
+	private Vector<?> calculate(TemporalFunction temporalFunction) {
+		Stream<Object> values = instants.stream().map(temporalFunction);
+		return toObjectVector(values);
 	}
 
 	private Vector<?> calculate(NumericalFunction function, String attribute) {
-		Signal signal = store.numericalQuery(attribute).signal(from(), to());
+		Signal signal = store.numericalQuery(attribute).get(from(), to());
 		Signal[] segments = signal.segments(duration());
 		double[] values = Arrays.stream(segments).map(function).mapToDouble(v -> v).toArray();
 		return new DoubleVector(values);
 	}
 
 	private Vector<?> calculate(CategoricalFunction function, String attribute, boolean isNumeric) {
-		Sequence sequence = store.categoricalQuery(attribute).sequence(from(), to());
+		Sequence sequence = store.categoricalQuery(attribute).get(from(), to());
 		Sequence[] segments = sequence.segments(duration());
 		Stream<Object> values = Arrays.stream(segments).map(function);
 		return isNumeric ?

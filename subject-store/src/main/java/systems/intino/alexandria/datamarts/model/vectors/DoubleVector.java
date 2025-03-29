@@ -9,13 +9,6 @@ import java.util.Map;
 
 public record DoubleVector(double[] values) implements Vector<Double> {
 
-	public DoubleVector negate() {
-		double[] result = new double[values.length];
-		for (int i = 0; i < values.length; i++)
-			result[i] = -values[i];
-		return new DoubleVector(result);
-	}
-
 	public DoubleVector add(DoubleVector vector) {
 		double[] result = new double[values.length];
 		for (int i = 0; i < values.length; i++)

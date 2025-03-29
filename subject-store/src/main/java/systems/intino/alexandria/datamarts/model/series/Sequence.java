@@ -13,6 +13,7 @@ import static systems.intino.alexandria.datamarts.model.TemporalReferences.itera
 
 public interface Sequence extends Series<String> {
 	default String[] values() { return stream().map(Point::value).toArray(String[]::new); }
+	default String[] distinct() { return stream().map(Point::value).distinct().toArray(String[]::new); }
 	default Sequence[] segments(TemporalAmount duration) { return splitBy(from(), to(), duration); }
 	default Sequence[] segments(int number) { return segments(duration().dividedBy(number)); }
 	default Summary summary() { return Summary.of(this); }

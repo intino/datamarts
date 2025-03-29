@@ -4,7 +4,6 @@ import java.time.*;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
 import java.util.function.Function;
 
 import static java.time.ZoneOffset.UTC;
@@ -26,11 +25,6 @@ public interface TemporalFunction extends Function<Instant, Object> {
 		map.put("year-month-day-hour-minute", ts-> zdt(ts).format(with("yyyyMMddHHmm")));
 		map.put("year-month-day-hour-minute-second", ts-> zdt(ts).format(with("yyyyMMddHHmmss")));
 		return map;
-	}
-
-
-	static boolean isNumeric(String function) {
-		return false;
 	}
 
 

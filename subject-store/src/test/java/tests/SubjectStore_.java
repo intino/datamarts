@@ -25,7 +25,7 @@ public class SubjectStore_ {
 	private static final String categories = "DEPOLARISE";
 
 	@Test
-	public void should_create_memory_databases() throws IOException {
+	public void should_create_memory_databases() {
 		try (SubjectStore store = new SubjectStore("00000")) {
 			assertThat(store.size()).isEqualTo(0);
 			assertThat(store.name()).isEqualTo("00000:subject");
@@ -35,15 +35,15 @@ public class SubjectStore_ {
 					.add("weight", 82.5)
 					.terminate();
 			assertThat(store.size()).isEqualTo(1);
-			assertThat(store.numericalQuery("weight").current().value()).isEqualTo(82.5);
+			assertThat(store.numericalQuery("weight").get().value()).isEqualTo(82.5);
 		}
 	}
 
 	@SuppressWarnings("ResultOfMethodCallIgnored")
 	@Test
-	public void should_handle_empty_store() throws IOException {
+	public void should_handle_empty_store() {
 		File file = new File("patient.oss");
-		try (SubjectStore store = new SubjectStore(file, "123")) {
+		try (SubjectStore store = new SubjectStore("123:patient", file)) {
 			assertThat(store.id()).isEqualTo("123");
 			assertThat(store.type()).isEqualTo("patient");
 			assertThat(store.name()).isEqualTo("123:patient");
@@ -51,9 +51,7 @@ public class SubjectStore_ {
 			assertThat(store.exists("field")).isFalse();
 			assertThat(store.currentNumber("field")).isNull();
 			assertThat(store.currentText("field")).isNull();
-			//assertThat(store.numericalQuery("field").signal(store.first(), store.last())).isEmpty();
-			assertThat(store.categoricalQuery("field").current()).isNull();
-			//assertThat(store.categoricalQuery("field").sequence(store.first(), store.last())).isEmpty();
+			assertThat(store.categoricalQuery("field").get()).isNull();
 			assertThat(store.legacyExists()).isFalse();
 			assertThat(store.bigbangExists()).isFalse();
 			assertThat(store.instants()).isEmpty();
@@ -66,7 +64,7 @@ public class SubjectStore_ {
 	@Test
 	public void should_ignore_feed_without_data() throws IOException {
 		File file = File.createTempFile("port", ".oss");
-		try (SubjectStore store = new SubjectStore(file, "00000")) {
+		try (SubjectStore store = new SubjectStore("00000", file)) {
 			store.feed(Instant.now(), "Skip").terminate();
 			assertThat(store.size()).isEqualTo(0);
 		}
@@ -75,12 +73,12 @@ public class SubjectStore_ {
 	@Test
 	public void should_return_most_recent_value_as_current() throws IOException {
 		File file = File.createTempFile("patient", ".oss");
-		try (SubjectStore store = new SubjectStore(file, "12345")) {
+		try (SubjectStore store = new SubjectStore("12345:patient", file)) {
 			feed(store);
 			assertThat(store.type()).startsWith("patient");
 			assertThat(store.id()).isEqualTo("12345");
 			assertThat(store.currentNumber("hemoglobin")).isEqualTo(145.0);
-			Point<Double> actual = store.numericalQuery("hemoglobin").current();
+			Point<Double> actual = store.numericalQuery("hemoglobin").get();
 			assertThat(actual.value()).isEqualTo(145);
 			assertThat(store.legacyExists()).isTrue();
 			assertThat(store.bigbangExists()).isTrue();
@@ -91,9 +89,9 @@ public class SubjectStore_ {
 
 	@SuppressWarnings("ResultOfMethodCallIgnored")
 	@Test
-	public void should_dump_events() throws IOException {
+	public void should_dump_events() {
 		File file = new File("patient.oss");
-		try (SubjectStore store = new SubjectStore(file, "12345")) {
+		try (SubjectStore store = new SubjectStore("12345:patient", file)) {
 			feed(store);
 			OutputStream os = new ByteArrayOutputStream();
 			store.dump(os);
@@ -151,7 +149,7 @@ public class SubjectStore_ {
 	@Test
 	public void should_store_legacy_values() throws IOException {
 		File file = File.createTempFile("port", ".oss");
-		try (SubjectStore store = new SubjectStore(file, "00000")) {
+		try (SubjectStore store = new SubjectStore("00000", file)) {
 			store.feed(Legacy, "UN:all-ports")
 					.add("Country", "China")
 					.add("Latitude", 31_219832454L)
@@ -159,7 +157,7 @@ public class SubjectStore_ {
 					.terminate();
 			test_stored_legacy_values(store);
 		}
-		try (SubjectStore store = new SubjectStore(file, "00000")) {
+		try (SubjectStore store = new SubjectStore("00000", file)) {
 			test_stored_legacy_values(store);
 		}
 	}
@@ -173,25 +171,25 @@ public class SubjectStore_ {
 		assertThat(store.exists("Country")).isTrue();
 		assertThat(store.exists("Latitude")).isTrue();
 		assertThat(store.exists("Longitude")).isTrue();
-		assertThat(store.categoricalQuery("Country").current()).isNull();
-		assertThat(store.categoricalQuery("Latitude").current()).isEqualTo(null);
-		assertThat(store.categoricalQuery("Longitude").current()).isEqualTo(null);
+		assertThat(store.categoricalQuery("Country").get()).isNull();
+		assertThat(store.categoricalQuery("Latitude").get()).isEqualTo(null);
+		assertThat(store.categoricalQuery("Longitude").get()).isEqualTo(null);
 
-		assertThat(store.categoricalQuery("Country").sequence(LegacyPhase).values()).containsExactly("China");
-		assertThat(store.categoricalQuery("Country").sequence(BigBangPhase).values()).containsExactly();
-		assertThat(store.categoricalQuery("Country").sequence(LastYearWindow).values()).containsExactly();
-		assertThat(store.categoricalQuery("Country").sequence(LastMonthWindow).values()).containsExactly();
-		assertThat(store.categoricalQuery("Country").sequence(LastDayWindow).values()).containsExactly();
-		assertThat(store.categoricalQuery("Country").sequence(LastHourWindow).values()).containsExactly();
-		assertThat(store.numericalQuery("Latitude").signal(store.first(), store.last()).values()).containsExactly(31_219832454L);
-		assertThat(store.numericalQuery("Latitude").signal(LegacyPhase).values()).containsExactly(31_219832454L);
-		assertThat(store.numericalQuery("Latitude").signal(BigBangPhase).values()).containsExactly();
-		assertThat(store.numericalQuery("Latitude").signal(ThisYear).values()).containsExactly();
-		assertThat(store.numericalQuery("Latitude").signal(ThisMonth).values()).containsExactly();
-		assertThat(store.numericalQuery("Latitude").signal(Today).values()).containsExactly();
-		assertThat(store.numericalQuery("Latitude").signal(ThisHour).values()).containsExactly();
-		assertThat(store.numericalQuery("Longitude").signal(LegacyPhase).values()).containsExactly(121_486998052L);
-		assertThat(store.numericalQuery("Longitude").signal(BigBangPhase).values()).containsExactly();
+		assertThat(store.categoricalQuery("Country").get(LegacyPhase).values()).containsExactly("China");
+		assertThat(store.categoricalQuery("Country").get(BigBangPhase).values()).containsExactly();
+		assertThat(store.categoricalQuery("Country").get(LastYearWindow).values()).containsExactly();
+		assertThat(store.categoricalQuery("Country").get(LastMonthWindow).values()).containsExactly();
+		assertThat(store.categoricalQuery("Country").get(LastDayWindow).values()).containsExactly();
+		assertThat(store.categoricalQuery("Country").get(LastHourWindow).values()).containsExactly();
+		assertThat(store.numericalQuery("Latitude").get(store.first(), store.last()).values()).containsExactly(31_219832454L);
+		assertThat(store.numericalQuery("Latitude").get(LegacyPhase).values()).containsExactly(31_219832454L);
+		assertThat(store.numericalQuery("Latitude").get(BigBangPhase).values()).containsExactly();
+		assertThat(store.numericalQuery("Latitude").get(ThisYear).values()).containsExactly();
+		assertThat(store.numericalQuery("Latitude").get(ThisMonth).values()).containsExactly();
+		assertThat(store.numericalQuery("Latitude").get(Today).values()).containsExactly();
+		assertThat(store.numericalQuery("Latitude").get(ThisHour).values()).containsExactly();
+		assertThat(store.numericalQuery("Longitude").get(LegacyPhase).values()).containsExactly(121_486998052L);
+		assertThat(store.numericalQuery("Longitude").get(BigBangPhase).values()).containsExactly();
 
 		assertThat(store.legacyExists()).isTrue();
 		assertThat(store.bigbangExists()).isFalse();
@@ -201,7 +199,7 @@ public class SubjectStore_ {
 	@Test
 	public void should_store_features() throws IOException {
 		File file = File.createTempFile("port", ".oss");
-		try (SubjectStore store = new SubjectStore(file, "00000")) {
+		try (SubjectStore store = new SubjectStore("00000", file)) {
 			store.feed(now, "UN:all-ports")
 					.add("Country", "China")
 					.add("Latitude", 31.219832454)
@@ -209,7 +207,7 @@ public class SubjectStore_ {
 					.terminate();
 			test_stored_features(store);
 		}
-		try (SubjectStore store = new SubjectStore(file,"00000")) {
+		try (SubjectStore store = new SubjectStore("00000", file)) {
 			test_stored_features(store);
 		}
 	}
@@ -222,13 +220,13 @@ public class SubjectStore_ {
 		assertThat(store.tags()).containsExactly("Country", "Latitude", "Longitude");
 		assertThat(store.ss(0)).isEqualTo("UN:all-ports");
 		assertThat(store.currentNumber("Latitude")).isEqualTo(31.219832454);
-		assertThat(store.numericalQuery("Latitude").current()).isEqualTo(value(0, now, 31.219832454));
-		assertThat(store.numericalQuery("Longitude").current()).isEqualTo(value(0, now, 121.486998052));
-		assertThat(store.numericalQuery("Longitude").signal(today(), today(1)).values()).containsExactly(121.486998052);
-		assertThat(store.categoricalQuery("Country").current()).isEqualTo(value(0, now, "China"));
-		assertThat(store.categoricalQuery("Country").current()).isEqualTo(value(0, now, "China"));
-		assertThat(store.categoricalQuery("Country").sequence(today(), today(1)).count()).isEqualTo(1);
-		assertThat(store.categoricalQuery("Country").sequence(today(), today(1)).values()).containsExactly("China");
+		assertThat(store.numericalQuery("Latitude").get()).isEqualTo(value(0, now, 31.219832454));
+		assertThat(store.numericalQuery("Longitude").get()).isEqualTo(value(0, now, 121.486998052));
+		assertThat(store.numericalQuery("Longitude").get(today(), today(1)).values()).containsExactly(121.486998052);
+		assertThat(store.categoricalQuery("Country").get()).isEqualTo(value(0, now, "China"));
+		assertThat(store.categoricalQuery("Country").get()).isEqualTo(value(0, now, "China"));
+		assertThat(store.categoricalQuery("Country").get(today(), today(1)).count()).isEqualTo(1);
+		assertThat(store.categoricalQuery("Country").get(today(), today(1)).values()).containsExactly("China");
 		assertThat(store.instants()).containsExactly(now);
 	}
 
@@ -240,7 +238,7 @@ public class SubjectStore_ {
 	@Test
 	public void should_store_time_series() throws IOException {
 		File file = File.createTempFile("port", ".oss");
-		try (SubjectStore store = new SubjectStore(file, "00000")) {
+		try (SubjectStore store = new SubjectStore("00000", file)) {
 			for (int i = 0; i < 10; i++) {
 				store.feed(today(i), "AIS:movements-" + i)
 						.add("Vessels", 1900 + i * 10)
@@ -249,7 +247,7 @@ public class SubjectStore_ {
 			}
 			test_stored_time_series(store);
 		}
-		try (SubjectStore store = new SubjectStore(file, "00000")) {
+		try (SubjectStore store = new SubjectStore("00000", file)) {
 			test_stored_time_series(store);
 		}
 	}
@@ -261,25 +259,26 @@ public class SubjectStore_ {
 		assertThat(store.tags()).containsExactly("Vessels", "State");
 		assertThat(store.ss(0)).isEqualTo("AIS:movements-0");
 		assertThat(store.ss(9)).isEqualTo("AIS:movements-9");
-		assertThat(store.numericalQuery("Vessels").current()).isEqualTo(value(9, today(9), 1990.0));
-		assertThat(store.numericalQuery("Vessels").signal(today(200), today(300)).isEmpty()).isTrue();
-		assertThat(store.numericalQuery("Vessels").signal(today(-200), today(-100)).isEmpty()).isTrue();
-		assertThat(store.numericalQuery("Vessels").signal(store.first(), store.last()).values()).containsExactly(1900L, 1910L, 1920L, 1930L, 1940L, 1950L, 1960L, 1970L, 1980L, 1990L);
-		assertThat(store.categoricalQuery("State").current()).isEqualTo(value(9, today(9), "E"));
-		assertThat(store.categoricalQuery("State").sequence(today(0), today(10)).summary().mode()).isEqualTo("E");
+		assertThat(store.numericalQuery("Vessels").get()).isEqualTo(value(9, today(9), 1990.0));
+		assertThat(store.numericalQuery("Vessels").get(today(200), today(300)).isEmpty()).isTrue();
+		assertThat(store.numericalQuery("Vessels").get(today(-200), today(-100)).isEmpty()).isTrue();
+		assertThat(store.numericalQuery("Vessels").getAll().values()).containsExactly(1900L, 1910L, 1920L, 1930L, 1940L, 1950L, 1960L, 1970L, 1980L, 1990L);
+		assertThat(store.categoricalQuery("State").getAll().values()).containsExactly("D", "E", "P", "O", "L", "A", "R", "I", "S", "E");
+		assertThat(store.categoricalQuery("State").getAll().distinct()).containsExactly("D", "E", "P", "O", "L", "A", "R", "I", "S");
+		assertThat(store.categoricalQuery("State").get()).isEqualTo(value(9, today(9), "E"));
+		assertThat(store.categoricalQuery("State").get(today(0), today(10)).summary().mode()).isEqualTo("E");
 	}
 
 	@SuppressWarnings("ResultOfMethodCallIgnored")
 	@Test
 	public void name() throws SQLException {
 		File file = new File("subjects.oss");
-		Connection connection = SqlConnection.from(file);
-		try {
+		try (Connection connection = SqlConnection.from(file)) {
 			SubjectStore[] stores = new SubjectStore[]{
-					new SubjectStore(connection, "00001"),
-					new SubjectStore(connection, "00002"),
-					new SubjectStore(connection, "00003"),
-					new SubjectStore(connection, "00004")
+					new SubjectStore("00001", connection),
+					new SubjectStore("00002", connection),
+					new SubjectStore("00003", connection),
+					new SubjectStore("00004", connection)
 			};
 			for (SubjectStore store : stores) {
 				for (int i = 0; i < 10; i++) {
@@ -290,9 +289,7 @@ public class SubjectStore_ {
 				}
 				test_stored_time_series(store);
 			}
-		}
-		finally {
-			connection.close();
+		} finally {
 			file.delete();
 		}
 	}

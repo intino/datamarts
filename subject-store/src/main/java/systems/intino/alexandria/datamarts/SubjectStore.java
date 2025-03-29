@@ -29,19 +29,9 @@ public class SubjectStore implements Closeable {
 	private final Connection connection;
 	private final boolean closeable;
 
-	public SubjectStore(Connection connection, String id) {
-		this.id = id;
-		this.type = "subject";
-		this.connection = connection;
-		this.registry = new SqliteRegistry(connection, id);
-		this.tagSet = new TagSet(registry.tags());
-		this.timeline = new Timeline(registry.instants());
-		this.closeable = false;
-	}
-
-	public SubjectStore(File file, String id) {
-		this.id = id;
-		this.type = withoutExtension(file.getName());
+	public SubjectStore(String name, File file) {
+		this.id = withoutType(name);
+		this.type = withoutId(name);
 		this.connection = SqlConnection.from(file);
 		this.registry = new SqliteRegistry(connection, id);
 		this.tagSet = new TagSet(registry.tags());
@@ -49,14 +39,24 @@ public class SubjectStore implements Closeable {
 		this.closeable = true;
 	}
 
-	public SubjectStore(String id) {
-		this.id = id;
-		this.type = "subject";
+	public SubjectStore(String name) {
+		this.id = withoutType(name);
+		this.type = withoutId(name);
 		this.connection = SqlConnection.inMemory();
 		this.registry = new SqliteRegistry(connection, id);
 		this.tagSet = new TagSet(registry.tags());
 		this.timeline = new Timeline(registry.instants());
 		this.closeable = true;
+	}
+
+	public SubjectStore(String name, Connection connection) {
+		this.id = withoutType(name);
+		this.type = withoutId(name);
+		this.connection = connection;
+		this.registry = new SqliteRegistry(connection, id);
+		this.tagSet = new TagSet(registry.tags());
+		this.timeline = new Timeline(registry.instants());
+		this.closeable = false;
 	}
 
 	public String name() {
@@ -112,12 +112,12 @@ public class SubjectStore implements Closeable {
 	}
 
 	public Double currentNumber(String tag) {
-		Point<Double> current = numericalQuery(tag).current();
+		Point<Double> current = numericalQuery(tag).get();
 		return current != null ? current.value() : null;
 	}
 
 	public String currentText(String tag) {
-		Point<String> current = categoricalQuery(tag).current();
+		Point<String> current = categoricalQuery(tag).get();
 		return current != null ? current.value() : null;
 	}
 
@@ -212,16 +212,20 @@ public class SubjectStore implements Closeable {
 			this.tag = tag;
 		}
 
-		public Point<Double> current() {
+		public Point<Double> get() {
 			return readNumber(tag);
 		}
 
-		public Signal signal(Instant from, Instant to) {
+		public Signal getAll() {
+			return get(first(), last());
+		}
+
+		public Signal get(Instant from, Instant to) {
 			return new Signal.Raw(from, to, readNumbers(tag, from, to));
 		}
 
-		public Signal signal(TemporalReferences.TimeSpan span) {
-			return signal(span.from(), span.to());
+		public Signal get(TemporalReferences.TimeSpan span) {
+			return get(span.from(), span.to());
 		}
 
 		@Override
@@ -238,18 +242,22 @@ public class SubjectStore implements Closeable {
 			this.tag = tag;
 		}
 
-		public Point<String> current() {
+		public Point<String> get() {
 			return readText(tag);
 		}
 
-		public Sequence sequence(Instant from, Instant to) {
+		public Sequence getAll() {
+			return get(first(), last());
+		}
+
+		public Sequence get(Instant from, Instant to) {
 			return new Sequence.Raw(from, to, readTexts(tag, from, to));
 		}
 
-		public Sequence sequence(TemporalReferences.TimeSpan span) {
-			return sequence(span.from(), span.to());
+		public Sequence get(TemporalReferences.TimeSpan span) {
+			return get(span.from(), span.to());
 		}
-		
+
 		@Override
 		public String toString() {
 			return "CategoricalQuery(" + tag + ')';
@@ -387,8 +395,14 @@ public class SubjectStore implements Closeable {
 		}
 	}
 
-	private static String withoutExtension(String name) {
-		return name.substring(0, name.lastIndexOf('.'));
+	private static String withoutType(String name) {
+		int index = name.indexOf(':');
+		return index > 0 ? name.substring(0, index) : name;
+	}
+
+	private static String withoutId(String name) {
+		int index = name.indexOf(':');
+		return index > 0 ? name.substring(index + 1) : "subject";
 	}
 
 	public static class RegistryException extends RuntimeException {
