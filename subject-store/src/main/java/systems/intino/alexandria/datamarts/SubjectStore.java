@@ -191,6 +191,18 @@ public class SubjectStore implements Closeable {
 		}
 	}
 
+	public void restore(File file) throws IOException {
+		try (InputStream is = new FileInputStream(file)) {
+			restore(is);
+		}
+	}
+
+	public void restore(InputStream is) throws IOException {
+		try (BufferedReader reader = new BufferedReader(new InputStreamReader(is))) {
+			new Restorer(reader).execute();
+		}
+	}	
+
 	public void dump(OutputStream os) {
 		registry.dump(os, dictionary());
 	}
@@ -270,9 +282,17 @@ public class SubjectStore implements Closeable {
 
 	private Transaction transaction(Feed feed) {
 		return new Transaction() {
+			private boolean ignored = false;
+
 			@Override
 			public Transaction add(String tag, String value) {
 				feed.put(tag, value);
+				return this;
+			}
+
+			@Override
+			public Transaction ignore(boolean value) {
+				this.ignored = value;
 				return this;
 			}
 
@@ -284,7 +304,7 @@ public class SubjectStore implements Closeable {
 
 			@Override
 			public void terminate() {
-				if (feed.isEmpty()) return;
+				if (feed.isEmpty() || ignored) return;
 				put(feed);
 				registry.push();
 			}
@@ -297,6 +317,7 @@ public class SubjectStore implements Closeable {
 			@Override
 			public Transaction feed(Instant instant, String source) {
 				return new Transaction() {
+					private boolean ignored = false;
 					private final Feed feed = new Feed(instant, source);
 					@Override
 					public Transaction add(String tag, double value) {
@@ -311,8 +332,14 @@ public class SubjectStore implements Closeable {
 					}
 
 					@Override
+					public Transaction ignore(boolean value) {
+						this.ignored = value;
+						return this;
+					}
+
+					@Override
 					public void terminate() {
-						if (feed.isEmpty()) return;
+						if (feed.isEmpty() || ignored) return;
 						feeds.add(feed);
 					}
 				};
@@ -372,6 +399,7 @@ public class SubjectStore implements Closeable {
 	public interface Transaction {
 		Transaction add(String tag, double value);
 		Transaction add(String tag, String value);
+		Transaction ignore(boolean value);
 		void terminate();
 	}
 
@@ -541,7 +569,73 @@ public class SubjectStore implements Closeable {
 			}
 			return index;
 		}
-
-
 	}
+
+	private final class Restorer {
+		private final BufferedReader reader;
+		private final Batch batch;
+		private Transaction transaction;
+
+		private Restorer(BufferedReader reader) {
+			this.reader = reader;
+			this.batch = batch();
+			this.transaction = batch.feed(Instant.now(), "restore");
+		}
+
+		public void execute() throws IOException {
+				while (true) {
+					if (process(reader.readLine())) continue;
+					break;
+				}
+				transaction.terminate();
+				batch.terminate();
+		}
+
+		private boolean process(String line) throws IOException {
+			if (line == null) return false;
+			return line.startsWith("[") ?
+					startNewTransaction(line) :
+					put(line);
+		}
+
+		private boolean startNewTransaction(String line) throws IOException {
+			transaction.terminate();
+			transaction = batch.feed(readInstant(), read("ss"))
+					.ignore(!line.equals("[" + type + "]"));
+			return true;
+		}
+
+		private boolean put(String line) {
+			return put(line.split("="));
+		}
+
+		private boolean put(String[] data) {
+			assert data.length == 2;
+			if (data[0].equals("id"))
+				transaction.ignore(!data[1].equals(id));
+			else
+				put(data[0], data[1]);
+			return true;
+		}
+
+		private void put(String tag, String value) {
+			try {
+				transaction.add(tag, Double.parseDouble(value));
+			} catch (NumberFormatException e) {
+				transaction.add(tag, value);
+			}
+		}
+
+		private Instant readInstant() throws IOException {
+			return Instant.parse(read("ts"));
+		}
+
+		private String read(String line) throws IOException {
+			String[] data = reader.readLine().split("=");
+			assert data.length == 2;
+			assert data[0].equals(line);
+			return data[1];
+		}
+	}
+	
 }

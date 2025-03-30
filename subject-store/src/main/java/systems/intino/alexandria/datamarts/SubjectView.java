@@ -1,6 +1,7 @@
 package systems.intino.alexandria.datamarts;
 
 import systems.intino.alexandria.datamarts.calculator.VectorCalculator;
+import systems.intino.alexandria.datamarts.io.Feed;
 import systems.intino.alexandria.datamarts.model.Filter;
 import systems.intino.alexandria.datamarts.model.TemporalReferences;
 import systems.intino.alexandria.datamarts.model.vectors.DoubleVector;
@@ -58,13 +59,13 @@ public class SubjectView {
 		return instants.size();
 	}
 
-	public void export(File file) throws IOException {
+	public void exportTo(File file) throws IOException {
 		try (OutputStream os = new FileOutputStream(file)) {
-			export(os);
+			exportTo(os);
 		}
 	}
 
-	public void export(OutputStream os) throws IOException {
+	public void exportTo(OutputStream os) throws IOException {
 		try (BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(os))) {
 			writer.write(tsv());
 		}

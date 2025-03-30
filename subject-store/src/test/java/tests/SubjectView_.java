@@ -30,7 +30,7 @@ public class SubjectView_ {
 		""";
 
 	@Test
-	public void should_export_tabular_report_with_temporal_numerical_and_categorical_columns() throws IOException {
+	public void should_export_To_tabular_report_with_temporal_numerical_and_categorical_columns() throws IOException {
 		try (SubjectStore store = new SubjectStore("map", File.createTempFile("xyz", ":patient.oss"))) {
 			feed(store);
 			Format format = new Format(from, to, Duration.ofDays(7));
@@ -48,7 +48,7 @@ public class SubjectView_ {
 			format.add(new Column("SkyCount=count:sky"));
 			format.add(new Column("NewTemp=NormTemp * 100"));			SubjectView table = new SubjectView(store, format);
 			ByteArrayOutputStream os = new ByteArrayOutputStream();
-			table.export(os);
+			table.exportTo(os);
 			assertThat(os.toString()).isEqualTo(expected);
 		}
 	}

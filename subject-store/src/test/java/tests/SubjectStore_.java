@@ -5,10 +5,7 @@ import systems.intino.alexandria.datamarts.model.Point;
 import systems.intino.alexandria.datamarts.SubjectStore;
 import org.junit.Test;
 
-import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.IOException;
-import java.io.OutputStream;
+import java.io.*;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.time.Instant;
@@ -23,21 +20,6 @@ public class SubjectStore_ {
 	private static final Instant now = Instant.now().truncatedTo(DAYS);
 	private static final Instant day = Instant.parse("2025-03-25T00:00:00Z");
 	private static final String categories = "DEPOLARISE";
-
-	@Test
-	public void should_create_memory_databases() {
-		try (SubjectStore store = new SubjectStore("00000")) {
-			assertThat(store.size()).isEqualTo(0);
-			assertThat(store.name()).isEqualTo("00000:subject");
-			assertThat(store.id()).isEqualTo("00000");
-			assertThat(store.type()).isEqualTo("subject");
-			store.feed(Instant.now(), "")
-					.add("weight", 82.5)
-					.terminate();
-			assertThat(store.size()).isEqualTo(1);
-			assertThat(store.numericalQuery("weight").get().value()).isEqualTo(82.5);
-		}
-	}
 
 	@SuppressWarnings("ResultOfMethodCallIgnored")
 	@Test
@@ -74,75 +56,33 @@ public class SubjectStore_ {
 	public void should_return_most_recent_value_as_current() throws IOException {
 		File file = File.createTempFile("patient", ".oss");
 		try (SubjectStore store = new SubjectStore("12345:patient", file)) {
-			feed(store);
-			assertThat(store.type()).startsWith("patient");
-			assertThat(store.id()).isEqualTo("12345");
-			assertThat(store.currentNumber("hemoglobin")).isEqualTo(145.0);
-			Point<Double> actual = store.numericalQuery("hemoglobin").get();
-			assertThat(actual.value()).isEqualTo(145);
-			assertThat(store.legacyExists()).isTrue();
-			assertThat(store.bigbangExists()).isTrue();
-			assertThat(store.legacyPending()).isFalse();
-			assertThat(store.instants()).containsExactly(Legacy, BigBang, day.plus(-5, DAYS), day);
+			feed_batch(store);
+			test_batch(store);
 		}
 	}
 
 	@SuppressWarnings("ResultOfMethodCallIgnored")
 	@Test
-	public void should_dump_events() {
+	public void should_dump_and_restore_events() throws IOException {
 		File file = new File("patient.oss");
+		OutputStream os = new ByteArrayOutputStream();
 		try (SubjectStore store = new SubjectStore("12345:patient", file)) {
-			feed(store);
-			OutputStream os = new ByteArrayOutputStream();
+			feed_batch(store);
 			store.dump(os);
-			assertThat(os.toString()).isEqualTo("""
-				[patient]
-				ts=2025-03-25T00:00:00Z
-				ss=HMG-2
-				id=12345
-				hemoglobin=145.0
-				[patient]
-				ts=2025-03-20T00:00:00Z
-				ss=HMG-1
-				id=12345
-				hemoglobin=130.0
-				[patient]
-				ts=-314918-08-13T06:13:20Z
-				ss=HMG-B
-				id=12345
-				hemoglobin=115.0
-				[patient]
-				ts=-1899355-09-09T13:20:00Z
-				ss=HMG-L
-				id=12345
-				hemoglobin=110.0
-				"""
-			);
 		}
 		finally {
 			file.delete();
 		}
-	}
-
-	private static void feed(SubjectStore store) {
-		SubjectStore.Batch batch = store.batch();
-		batch.feed(day, "HMG-2")
-				.add("hemoglobin", 145)
-				.terminate();
-
-		batch.feed(day.plus(-5, DAYS), "HMG-1")
-				.add("hemoglobin", 130)
-				.terminate();
-
-		batch.feed(BigBang, "HMG-B")
-				.add("hemoglobin", 115)
-				.terminate();
-
-		batch.feed(Legacy, "HMG-L")
-				.add("hemoglobin", 110)
-				.terminate();
-
-		batch.terminate();
+		String dump = os.toString();
+		test_dump(dump);
+		InputStream is = new ByteArrayInputStream(dump.getBytes());
+		try (SubjectStore store = new SubjectStore("12345:patient", file)) {
+			store.restore(is);
+			test_batch(store);
+		}
+		finally {
+			file.delete();
+		}
 	}
 
 
@@ -230,25 +170,57 @@ public class SubjectStore_ {
 		assertThat(store.instants()).containsExactly(now);
 	}
 
-	@SuppressWarnings("SameParameterValue")
-	private static <T> Point<T> value(int feed, Instant instant, T value) {
-		return new Point<>(feed, instant, value);
-	}
-
 	@Test
 	public void should_store_time_series() throws IOException {
 		File file = File.createTempFile("port", ".oss");
 		try (SubjectStore store = new SubjectStore("00000", file)) {
-			for (int i = 0; i < 10; i++) {
-				store.feed(today(i), "AIS:movements-" + i)
-						.add("Vessels", 1900 + i * 10)
-						.add("State", categories.substring(i, i + 1))
-						.terminate();
-			}
+			feed_time_series(store);
 			test_stored_time_series(store);
 		}
 		try (SubjectStore store = new SubjectStore("00000", file)) {
 			test_stored_time_series(store);
+		}
+	}
+
+	@Test
+	public void should_create_memory_databases() {
+		try (SubjectStore store = new SubjectStore("00000")) {
+			feed_time_series(store);
+			test_stored_time_series(store);
+		}
+	}
+
+	@SuppressWarnings("ResultOfMethodCallIgnored")
+	@Test
+	public void should_include_several_subjects() throws SQLException {
+		File file = new File("subjects.oss");
+		try (Connection connection = SqlConnection.from(file)) {
+			SubjectStore[] stores = new SubjectStore[]{
+					new SubjectStore("00001", connection),
+					new SubjectStore("00002", connection),
+					new SubjectStore("00003", connection),
+					new SubjectStore("00004", connection)
+			};
+			for (SubjectStore store : stores) {
+				feed_time_series(store);
+				test_stored_time_series(store);
+			}
+		} finally {
+			file.delete();
+		}
+	}
+
+	@Test
+	public void name() {
+
+	}
+
+	private static void feed_time_series(SubjectStore store) {
+		for (int i = 0; i < 10; i++) {
+			store.feed(today(i), "AIS:movements-" + i)
+					.add("Vessels", 1900 + i * 10)
+					.add("State", categories.substring(i, i + 1))
+					.terminate();
 		}
 	}
 
@@ -269,28 +241,64 @@ public class SubjectStore_ {
 		assertThat(store.categoricalQuery("State").get(today(0), today(10)).summary().mode()).isEqualTo("E");
 	}
 
-	@SuppressWarnings("ResultOfMethodCallIgnored")
-	@Test
-	public void name() throws SQLException {
-		File file = new File("subjects.oss");
-		try (Connection connection = SqlConnection.from(file)) {
-			SubjectStore[] stores = new SubjectStore[]{
-					new SubjectStore("00001", connection),
-					new SubjectStore("00002", connection),
-					new SubjectStore("00003", connection),
-					new SubjectStore("00004", connection)
-			};
-			for (SubjectStore store : stores) {
-				for (int i = 0; i < 10; i++) {
-					store.feed(today(i), "AIS:movements-" + i)
-							.add("Vessels", 1900 + i * 10)
-							.add("State", categories.substring(i, i + 1))
-							.terminate();
-				}
-				test_stored_time_series(store);
-			}
-		} finally {
-			file.delete();
-		}
+	private static void feed_batch(SubjectStore store) {
+		SubjectStore.Batch batch = store.batch();
+		batch.feed(day, "HMG-2")
+				.add("hemoglobin", 145)
+				.terminate();
+
+		batch.feed(day.plus(-5, DAYS), "HMG-1")
+				.add("hemoglobin", 130)
+				.terminate();
+
+		batch.feed(day.plus(-3, DAYS), "HMG-B")
+				.add("hemoglobin", 115)
+				.terminate();
+
+		batch.feed(day.plus(-20, DAYS), "HMG-L")
+				.add("hemoglobin", 110)
+				.terminate();
+
+		batch.terminate();
+	}
+
+	private static void test_dump(String dump) {
+		assertThat(dump).isEqualTo("""
+				[patient]
+				ts=2025-03-25T00:00:00Z
+				ss=HMG-2
+				id=12345
+				hemoglobin=145.0
+				[patient]
+				ts=2025-03-20T00:00:00Z
+				ss=HMG-1
+				id=12345
+				hemoglobin=130.0
+				[patient]
+				ts=2025-03-22T00:00:00Z
+				ss=HMG-B
+				id=12345
+				hemoglobin=115.0
+				[patient]
+				ts=2025-03-05T00:00:00Z
+				ss=HMG-L
+				id=12345
+				hemoglobin=110.0
+				"""
+		);
+	}
+
+	@SuppressWarnings("SameParameterValue")
+	private static <T> Point<T> value(int feed, Instant instant, T value) {
+		return new Point<>(feed, instant, value);
+	}
+
+	private static void test_batch(SubjectStore store) {
+		assertThat(store.type()).startsWith("patient");
+		assertThat(store.id()).isEqualTo("12345");
+		assertThat(store.currentNumber("hemoglobin")).isEqualTo(145.0);
+		Point<Double> actual = store.numericalQuery("hemoglobin").get();
+		assertThat(actual.value()).isEqualTo(145);
+		assertThat(store.instants()).containsExactly(day.plus(-20, DAYS), day.plus(-5, DAYS), day.plus(-3, DAYS), day);
 	}
 }

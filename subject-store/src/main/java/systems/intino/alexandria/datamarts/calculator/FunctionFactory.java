@@ -33,6 +33,7 @@ public class FunctionFactory {
 		Functions.put("log", Math::log);
 		Functions.put("log10", Math::log10);
 
+		Functions.put("sqr", v-> v * v);
 		Functions.put("sqrt", Math::sqrt);
 		Functions.put("cbrt", Math::cbrt);
 
