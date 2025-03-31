@@ -2,7 +2,7 @@
 <project version="4">
   <component name="DataSourceManagerImpl" format="xml" multifile-model="true">
     <data-source source="LOCAL" name="12345:patient" uuid="951946ed-d780-4bc1-a899-951ebde673c8">
-      <driver-ref>sqlite.xerial</driver-ref>
+      <driver-ref>4a98f995-5443-482b-9cbc-97c03a4bfc32</driver-ref>
       <synchronize>true</synchronize>
       <jdbc-driver>org.sqlite.JDBC</jdbc-driver>
       <jdbc-url>jdbc:sqlite:$PROJECT_DIR$/subject-store/12345:patient.oss</jdbc-url>
@@ -20,7 +20,7 @@
       </libraries>
     </data-source>
     <data-source source="LOCAL" name="1234193248:parking" uuid="849c5c61-a65d-4ae4-a656-d94064540ede">
-      <driver-ref>sqlite.xerial</driver-ref>
+      <driver-ref>4a98f995-5443-482b-9cbc-97c03a4bfc32</driver-ref>
       <synchronize>true</synchronize>
       <jdbc-driver>org.sqlite.JDBC</jdbc-driver>
       <jdbc-url>jdbc:sqlite:$PROJECT_DIR$/1234193248:parking.oss</jdbc-url>
