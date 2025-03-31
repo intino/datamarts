@@ -38,15 +38,16 @@ public class SubjectView_ {
 			format.add(new Column("Month=month-of-year"));
 			format.add(new Column("Day=day-of-month"));
 
-			format.add(new Column("TotalTemp=sum:temperature"));
-			format.add(new Column("AvgTemp=average:temperature"));
+			format.add(new Column("TotalTemp=temperature.sum"));
+			format.add(new Column("AvgTemp=temperature.average"));
 			format.add(new Column("NormTemp=TotalTemp").add(new MinMaxNormalizationFilter()));
 			format.add(new Column("Trend=AvgTemp").add(new RollingAverageFilter(3)));
 
-			format.add(new Column("LastTemp=last:temperature"));
-			format.add(new Column("SkyMode=mode:sky"));
-			format.add(new Column("SkyCount=count:sky"));
-			format.add(new Column("NewTemp=NormTemp * 100"));			SubjectView table = new SubjectView(store, format);
+			format.add(new Column("LastTemp=temperature.last"));
+			format.add(new Column("SkyMode=sky.mode"));
+			format.add(new Column("SkyCount=sky.count"));
+			format.add(new Column("NewTemp=NormTemp * 100"));
+			SubjectView table = new SubjectView(store, format);
 			ByteArrayOutputStream os = new ByteArrayOutputStream();
 			table.exportTo(os);
 			assertThat(os.toString()).isEqualTo(expected);
