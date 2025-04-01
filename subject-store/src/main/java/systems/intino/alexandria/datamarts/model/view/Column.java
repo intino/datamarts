@@ -33,12 +33,8 @@ public class Column {
 		String[] nameAndRest = definition.split("=", 2);
 		String[] functionAndAttribute = nameAndRest[1].split("\\.", 2);
 
-		return createResult(nameAndRest[0], functionAndAttribute);
-	}
-
-	private static Map<String, String> createResult(String name, String[] functionAndAttribute) {
 		Map<String, String> result = new HashMap<>();
-		result.put("name", name);
+		result.put("name", nameAndRest[0]);
 		result.put("function", functionAndAttribute.length == 1 ? functionAndAttribute[0] : functionAndAttribute[1]);
 		result.put("attribute", functionAndAttribute.length > 1 ? functionAndAttribute[0] : null);
 		return result;
