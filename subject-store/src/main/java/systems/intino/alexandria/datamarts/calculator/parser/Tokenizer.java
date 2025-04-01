@@ -32,13 +32,12 @@ public class Tokenizer {
 	private Token nextToken() {
 		skipBlanks();
 		if (isEndOfInput()) return null;
-		if (isIdentifier()) return tokenIdentifier();
 		if (isNumber()) return tokenNumber();
+		if (isStartingIdentifier()) return tokenIdentifier();
 
 		try {
 			if (isBraceOpen()) return token(BRACE_OPEN);
 			if (isBraceClose()) return token(BRACE_CLOSE);
-			if (isComma()) return token(COMMA);
 			if (isOperator()) return token(OPERATOR);
 		}
 		finally {
@@ -52,10 +51,6 @@ public class Tokenizer {
 	private boolean isOperator() {
 		return Characters.contains(currentChar);
 	}
-	private boolean isComma() {
-		return currentChar == ',';
-	}
-
 	private boolean isBraceClose() {
 		return currentChar == ')';
 	}
@@ -102,8 +97,12 @@ public class Tokenizer {
 		return currentChar == Character.MAX_VALUE;
 	}
 
+	private boolean isStartingIdentifier() {
+		return Character.isLetter(currentChar) || currentChar == '_';
+	}
+
 	private boolean isIdentifier() {
-		return Character.isLetter(currentChar) || currentChar == '_' || currentChar == '#';
+		return Character.isAlphabetic(currentChar) || "_-#.".indexOf(currentChar) >= 0;
 	}
 
 	private boolean isNumber() {

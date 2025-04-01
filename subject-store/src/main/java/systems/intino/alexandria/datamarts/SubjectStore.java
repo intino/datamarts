@@ -2,11 +2,11 @@ package systems.intino.alexandria.datamarts;
 
 import systems.intino.alexandria.datamarts.io.Feed;
 import systems.intino.alexandria.datamarts.io.Registry;
-import systems.intino.alexandria.datamarts.io.registries.SqlConnection;
+import systems.intino.alexandria.datamarts.io.registries.SqliteConnection;
 import systems.intino.alexandria.datamarts.io.Bundle;
 import systems.intino.alexandria.datamarts.model.TemporalReferences;
 import systems.intino.alexandria.datamarts.model.Point;
-import systems.intino.alexandria.datamarts.io.registries.SqliteRegistry;
+import systems.intino.alexandria.datamarts.io.registries.SqlRegistry;
 import systems.intino.alexandria.datamarts.model.series.Sequence;
 import systems.intino.alexandria.datamarts.model.series.Signal;
 
@@ -32,8 +32,8 @@ public class SubjectStore implements Closeable {
 	public SubjectStore(String name, File file) {
 		this.id = withoutType(name);
 		this.type = withoutId(name);
-		this.connection = SqlConnection.from(file);
-		this.registry = new SqliteRegistry(connection, id);
+		this.connection = SqliteConnection.from(file);
+		this.registry = new SqlRegistry(id, connection);
 		this.tagSet = new TagSet(registry.tags());
 		this.timeline = new Timeline(registry.instants());
 		this.closeable = true;
@@ -42,8 +42,8 @@ public class SubjectStore implements Closeable {
 	public SubjectStore(String name) {
 		this.id = withoutType(name);
 		this.type = withoutId(name);
-		this.connection = SqlConnection.inMemory();
-		this.registry = new SqliteRegistry(connection, id);
+		this.connection = SqliteConnection.inMemory();
+		this.registry = new SqlRegistry(id, connection);
 		this.tagSet = new TagSet(registry.tags());
 		this.timeline = new Timeline(registry.instants());
 		this.closeable = true;
@@ -53,7 +53,7 @@ public class SubjectStore implements Closeable {
 		this.id = withoutType(name);
 		this.type = withoutId(name);
 		this.connection = connection;
-		this.registry = new SqliteRegistry(connection, id);
+		this.registry = new SqlRegistry(id, connection);
 		this.tagSet = new TagSet(registry.tags());
 		this.timeline = new Timeline(registry.instants());
 		this.closeable = false;

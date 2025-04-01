@@ -1,4 +1,4 @@
-package systems.intino.alexandria.datamarts.model.view.functions;
+package systems.intino.alexandria.datamarts.model.view.fields;
 
 import systems.intino.alexandria.datamarts.model.series.Signal;
 
@@ -8,11 +8,11 @@ import java.util.function.Function;
 
 import static java.lang.Double.NaN;
 
-public interface NumericalFunction extends Function<Signal, Double> {
-	Map<String, NumericalFunction> map = create();
+public interface NumericalField extends Function<Signal, Double> {
+	Map<String, NumericalField> map = create();
 
-	private static Map<String, NumericalFunction> create() {
-		Map<String, NumericalFunction> map = new HashMap<>();
+	private static Map<String, NumericalField> create() {
+		Map<String, NumericalField> map = new HashMap<>();
 		map.put("count", s -> (double) s.count());
 		map.put("sum", s -> s.summary().sum());
 		map.put("average", s -> s.summary().mean());
@@ -29,7 +29,7 @@ public interface NumericalFunction extends Function<Signal, Double> {
 		return map.containsKey(function);
 	}
 
-	static NumericalFunction of(String name) {
+	static NumericalField of(String name) {
 		if (!map.containsKey(name)) throw new RuntimeException("Unknown function: " + name);
 		return map.get(name);
 	}

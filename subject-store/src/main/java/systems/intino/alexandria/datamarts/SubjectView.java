@@ -1,25 +1,23 @@
 package systems.intino.alexandria.datamarts;
 
 import systems.intino.alexandria.datamarts.calculator.VectorCalculator;
-import systems.intino.alexandria.datamarts.io.Feed;
 import systems.intino.alexandria.datamarts.model.Filter;
 import systems.intino.alexandria.datamarts.model.TemporalReferences;
+import systems.intino.alexandria.datamarts.model.series.Sequence;
+import systems.intino.alexandria.datamarts.model.series.Signal;
 import systems.intino.alexandria.datamarts.model.vectors.DoubleVector;
 import systems.intino.alexandria.datamarts.model.vectors.ObjectVector;
 import systems.intino.alexandria.datamarts.model.view.Format;
 import systems.intino.alexandria.datamarts.model.view.Column;
-import systems.intino.alexandria.datamarts.model.series.Sequence;
-import systems.intino.alexandria.datamarts.model.series.Signal;
 import systems.intino.alexandria.datamarts.model.Vector;
-import systems.intino.alexandria.datamarts.model.view.functions.CategoricalFunction;
-import systems.intino.alexandria.datamarts.model.view.functions.NumericalFunction;
-import systems.intino.alexandria.datamarts.model.view.functions.TemporalFunction;
+import systems.intino.alexandria.datamarts.model.view.fields.CategoricalField;
+import systems.intino.alexandria.datamarts.model.view.fields.NumericalField;
+import systems.intino.alexandria.datamarts.model.view.fields.TemporalField;
 
 import java.io.*;
 import java.time.*;
 import java.time.temporal.TemporalAmount;
 import java.util.*;
-import java.util.stream.Stream;
 
 public class SubjectView {
 	private final SubjectStore store;
@@ -76,66 +74,84 @@ public class SubjectView {
 	}
 
 	private void build(Column column) {
-		vectors.put(column.name, apply(calculate(column), column.filters));
+		vectors.put(column.name, calculate(column));
 	}
 
-	private static Vector<?> apply(Vector<?> input, List<Filter> filters) {
+	private Vector<?> calculate(Column column) {
+		if (column.isAlphanumeric()) {
+			return get(tagIn(column.definition), CategoricalField.of(fieldIn(column.definition)));
+		}
+		else {
+			return filter(calculate(column.definition), column.filters);
+		}
+	}
+
+	private DoubleVector calculate(String definition) {
+		return vectorCalculator().calculate(definition);
+	}
+
+	private Vector<?> filter(Vector<?> input, List<Filter> filters) {
 		return input instanceof DoubleVector vector ?
-				apply(vector.values(), filters) :
+				filter(vector.values(), filters) :
 				input;
 	}
 
-	private static DoubleVector apply(double[] values, List<Filter> filters) {
+	private DoubleVector filter(double[] values, List<Filter> filters) {
 		for (Filter filter : filters)
 			values = filter.apply(values);
 		return new DoubleVector(values);
 	}
 
-	private Vector<?> calculate(Column column) {
-		return switch (column.type) {
-			case Temporal -> calculate(TemporalFunction.of(column.function));
-			case Numerical -> calculate(NumericalFunction.of(column.function), column.attribute);
-			case Categorical -> calculate(CategoricalFunction.of(column.function), column.attribute, CategoricalFunction.isNumeric(column.function));
-			case Formula -> calculate(column.function);
-		};
+	private VectorCalculator vectorCalculator() {
+		return new VectorCalculator(rows(), this::variable);
 	}
 
-	private Vector<?> calculate(TemporalFunction temporalFunction) {
-		Stream<Object> values = instants.stream().map(temporalFunction);
-		return toObjectVector(values);
+	private DoubleVector variable(String name) {
+		if (vectors.get(name) instanceof DoubleVector vector) return vector;
+		String tag = tagIn(name);
+		String field = fieldIn(name);
+		if (isTemporal(tag) && TemporalField.contains(field)) return calculate(TemporalField.of(field));
+		if (CategoricalField.contains(field)) return calculate(tag, CategoricalField.of(field));
+		if (NumericalField.contains(field)) return calculate(tag, NumericalField.of(field));
+		throw new RuntimeException(name + " not found");
 	}
 
-	private Vector<?> calculate(NumericalFunction function, String attribute) {
-		Signal signal = store.numericalQuery(attribute).get(from(), to());
+	private DoubleVector calculate(TemporalField temporalField) {
+		double[] values = instants.stream().map(temporalField).mapToDouble(s -> (double) s).toArray();
+		return new DoubleVector(values);
+	}
+
+	private DoubleVector calculate(String tag, NumericalField function) {
+		Signal signal = store.numericalQuery(tag).get(from(), to());
 		Signal[] segments = signal.segments(duration());
 		double[] values = Arrays.stream(segments).map(function).mapToDouble(v -> v).toArray();
 		return new DoubleVector(values);
 	}
 
-	private Vector<?> calculate(CategoricalFunction function, String attribute, boolean isNumeric) {
+	private DoubleVector calculate(String tag, CategoricalField function) {
+		Sequence sequence = store.categoricalQuery(tag).get(from(), to());
+		Sequence[] segments = sequence.segments(duration());
+		double[] values = Arrays.stream(segments).map(function).mapToDouble(s -> (double) s).toArray();
+		return new DoubleVector(values);
+	}
+
+	private Vector<?> get(String attribute, CategoricalField function) {
 		Sequence sequence = store.categoricalQuery(attribute).get(from(), to());
 		Sequence[] segments = sequence.segments(duration());
-		Stream<Object> values = Arrays.stream(segments).map(function);
-		return isNumeric ?
-				toDoubleVector(values) :
-				toObjectVector(values);
+		Object[] values = Arrays.stream(segments).map(function).toArray(Object[]::new);
+		return new ObjectVector(values);
 	}
 
-	private Vector<?> toDoubleVector(Stream<Object> values) {
-		return new DoubleVector(values.mapToDouble(v-> (double) v).toArray());
+	private boolean isTemporal(String tag) {
+		return tag.equals("ts");
 	}
 
-	private Vector<?> toObjectVector(Stream<Object> values) {
-		return new ObjectVector(values.toArray(Object[]::new));
+	private String tagIn(String name) {
+		return name.split("\\.")[0];
 	}
 
-	private Vector<?> calculate(String formula) {
-		VectorCalculator calculator = new VectorCalculator(rows());
-		for (String name : vectors.keySet()) {
-			Vector<?> vector = vectors.get(name);
-			if (vector instanceof DoubleVector v) calculator.add(name, v);
-		}
-		return calculator.calculate(formula);
+	private String fieldIn(String name) {
+		return name.split("\\.")[1];
 	}
 
 	private String tsv() {

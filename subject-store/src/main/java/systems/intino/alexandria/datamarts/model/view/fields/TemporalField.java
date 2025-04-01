@@ -1,4 +1,4 @@
-package systems.intino.alexandria.datamarts.model.view.functions;
+package systems.intino.alexandria.datamarts.model.view.fields;
 
 import java.time.*;
 import java.time.format.DateTimeFormatter;
@@ -8,16 +8,16 @@ import java.util.function.Function;
 
 import static java.time.ZoneOffset.UTC;
 
-public interface TemporalFunction extends Function<Instant, Object> {
-	Map<String, TemporalFunction> map = create();
+public interface TemporalField extends Function<Instant, Object> {
+	Map<String, TemporalField> map = create();
 
-	static Map<String, TemporalFunction> create() {
-		Map<String, TemporalFunction> map = new HashMap<>();
-		map.put("day-of-week", ts-> zdt(ts).getDayOfWeek().getValue());
-		map.put("day-of-month", ts-> zdt(ts).getDayOfMonth());
-		map.put("month-of-year", ts-> (zdt(ts).getMonthValue()));
-		map.put("year", ts->  zdt(ts).getYear());
+	static Map<String, TemporalField> create() {
+		Map<String, TemporalField> map = new HashMap<>();
+		map.put("day-of-week", ts-> (double) zdt(ts).getDayOfWeek().getValue());
+		map.put("day-of-month", ts-> (double) zdt(ts).getDayOfMonth());
+		map.put("month-of-year", ts-> (double) (zdt(ts).getMonthValue()));
 		map.put("quarter-of-year", ts-> (double) quarterOf(zdt(ts)));
+		map.put("year", ts->  (double) zdt(ts).getYear());
 		map.put("year-quarter", ts-> zdt(ts).getYear() + "Q" + quarterOf(zdt(ts)));
 		map.put("year-month", ts-> zdt(ts).format(with("yyyyMM")));
 		map.put("year-month-day", ts-> zdt(ts).format(with("yyyyMMdd")));
@@ -28,7 +28,7 @@ public interface TemporalFunction extends Function<Instant, Object> {
 	}
 
 
-	static TemporalFunction of(String function) {
+	static TemporalField of(String function) {
 		return map.containsKey(function) ? map.get(function) : ts-> "Unknown function: " + function;
 	}
 

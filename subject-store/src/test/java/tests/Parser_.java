@@ -8,6 +8,7 @@ import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 public class Parser_ {
 	@Test
 	public void should_parse_constants_variables_and_basic_operations() {
+		assertThat(parse("A / (B - 12.5)")).isEqualTo("Div[Var[A], Sub[Var[B], Const[12.5]]]");
 		assertThat(parse("12")).isEqualTo("Const[12.0]");
 		assertThat(parse("A")).isEqualTo("Var[A]");
 		assertThat(parse("A% B")).isEqualTo("Mod[Var[A], Var[B]]");
@@ -15,7 +16,6 @@ public class Parser_ {
 		assertThat(parse("A * 3 + 12")).isEqualTo("Sum[Mul[Var[A], Const[3.0]], Const[12.0]]");
 		assertThat(parse("A * (3 + B)")).isEqualTo("Mul[Var[A], Sum[Const[3.0], Var[B]]]");
 		assertThat(parse("A % 4 * (3 + B)")).isEqualTo("Mod[Var[A], Mul[Const[4.0], Sum[Const[3.0], Var[B]]]]");
-		assertThat(parse("A / (B - 12.5)")).isEqualTo("Div[Var[A], Sub[Var[B], Const[12.5]]]");
 	}
 
 	@Test

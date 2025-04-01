@@ -1,6 +1,6 @@
 package tests;
 
-import systems.intino.alexandria.datamarts.io.registries.SqlConnection;
+import systems.intino.alexandria.datamarts.io.registries.SqliteConnection;
 import systems.intino.alexandria.datamarts.model.Point;
 import systems.intino.alexandria.datamarts.SubjectStore;
 import org.junit.Test;
@@ -194,7 +194,7 @@ public class SubjectStore_ {
 	@Test
 	public void should_include_several_subjects() throws SQLException {
 		File file = new File("subjects.oss");
-		try (Connection connection = SqlConnection.from(file)) {
+		try (Connection connection = SqliteConnection.from(file)) {
 			SubjectStore[] stores = new SubjectStore[]{
 					new SubjectStore("00001", connection),
 					new SubjectStore("00002", connection),

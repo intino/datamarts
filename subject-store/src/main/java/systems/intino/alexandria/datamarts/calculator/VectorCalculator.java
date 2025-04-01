@@ -1,5 +1,7 @@
 package systems.intino.alexandria.datamarts.calculator;
 
+import systems.intino.alexandria.datamarts.calculator.Expression.BinaryExpression;
+import systems.intino.alexandria.datamarts.calculator.Expression.UnaryExpression;
 import systems.intino.alexandria.datamarts.calculator.expressions.Constant;
 import systems.intino.alexandria.datamarts.calculator.expressions.NamedFunction;
 import systems.intino.alexandria.datamarts.calculator.expressions.Variable;
@@ -7,21 +9,15 @@ import systems.intino.alexandria.datamarts.calculator.parser.Parser;
 import systems.intino.alexandria.datamarts.model.vectors.DoubleVector;
 
 import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.function.Function;
 
 public class VectorCalculator {
 	private final int size;
-	private final Map<String, DoubleVector> variables;
+	private final Function<String, DoubleVector> variable;
 
-	public VectorCalculator(int size) {
+	public VectorCalculator(int size, Function<String, DoubleVector> variable) {
 		this.size = size;
-		this.variables = new HashMap<>();
-	}
-
-	public void add(String variable, DoubleVector vector) {
-		if (vector.size() != size) return;
-		variables.put(variable, vector);
+		this.variable = variable;
 	}
 
 	public DoubleVector calculate(String formula) {
@@ -31,16 +27,15 @@ public class VectorCalculator {
 	}
 
 	private Expression fill(Expression expression) {
-		if (expression instanceof Expression.BinaryExpression e)
-			fill(e.left(), e.right());
-		if (expression instanceof Expression.UnaryExpression e)
-			fill(e.on());
-		if (expression instanceof NamedFunction e)
-			fill(e.on());
-		if (expression instanceof Constant e)
-			e.set(new DoubleVector(fill(e.value())));
-		if (expression instanceof Variable e)
-			e.set(get(e.name()));
+		switch (expression) {
+			case BinaryExpression e -> fill(e.left(), e.right());
+			case UnaryExpression e -> fill(e.on());
+			case NamedFunction e -> fill(e.on());
+			case Constant e -> e.set(new DoubleVector(fill(e.value())));
+			case Variable e -> e.set(get(e.name()));
+			default -> {
+			}
+		}
 		return expression;
 	}
 
@@ -50,16 +45,11 @@ public class VectorCalculator {
 
 	public DoubleVector get(String name) {
 		return switch (name) {
-			case "#PI" -> new DoubleVector(fill(Math.PI));
-			case "#E" -> new DoubleVector(fill(Math.E));
-			case "#RANDOM" -> new DoubleVector(random());
-			default -> variable(name);
+			case "PI" -> new DoubleVector(fill(Math.PI));
+			case "E" -> new DoubleVector(fill(Math.E));
+			case "RANDOM" -> new DoubleVector(random());
+			default -> variable.apply(name);
 		};
-	}
-
-	private DoubleVector variable(String name) {
-		if (variables.containsKey(name)) return variables.get(name);
-		throw new RuntimeException("Variable " + name + " not found");
 	}
 
 	private double[] random() {
