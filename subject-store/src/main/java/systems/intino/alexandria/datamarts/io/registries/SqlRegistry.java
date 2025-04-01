@@ -14,7 +14,7 @@ import static systems.intino.alexandria.datamarts.model.TemporalReferences.BigBa
 import static systems.intino.alexandria.datamarts.model.TemporalReferences.Legacy;
 import static java.sql.Types.*;
 
-public class SqliteRegistry implements Registry {
+public class SqlRegistry implements Registry {
 	private final Connection connection;
 	private final StatementProvider statementProvider;
 	private final String id;
@@ -22,7 +22,7 @@ public class SqliteRegistry implements Registry {
 	private int current;
 
 
-	public SqliteRegistry(Connection connection, String id) {
+	public SqlRegistry(String id, Connection connection) {
 		try {
 			this.id = id;
 			this.connection = connection;
