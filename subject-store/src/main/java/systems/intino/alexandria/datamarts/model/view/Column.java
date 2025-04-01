@@ -39,13 +39,8 @@ public class Column {
 	private static Map<String, String> createResult(String name, String[] functionAndAttribute) {
 		Map<String, String> result = new HashMap<>();
 		result.put("name", name);
-		if (functionAndAttribute.length == 1) {
-			result.put("function", functionAndAttribute[0]);
-			result.put("attribute", null);
-		} else {
-			result.put("function", functionAndAttribute[1]);
-			result.put("attribute", functionAndAttribute[0]);
-		}
+		result.put("function", functionAndAttribute.length == 1 ? functionAndAttribute[0] : functionAndAttribute[1]);
+		result.put("attribute", functionAndAttribute.length > 1 ? functionAndAttribute[0] : null);
 		return result;
 	}
 
