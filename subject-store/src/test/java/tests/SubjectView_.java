@@ -58,9 +58,11 @@ public class SubjectView_ {
 		try (SubjectStore store = new SubjectStore("map", File.createTempFile("xyz", ":patient.oss"))) {
 			feed(store);
 			String format = """
-			from: 2025-01
-			to: 2025-02
-			period: P7D
+			rows:
+			  from: 2025-01
+			  to: 2025-02
+			  period: P7D
+			
 			columns:
 			  - name: "Year"
 			    calc: "ts.year"
