@@ -20,6 +20,11 @@ public class Column {
 		return this;
 	}
 
+	public Column add(List<Filter> filters) {
+		this.filters.addAll(filters);
+		return this;
+	}
+
 	private static final Set<String> AlphanumericRules = Set.of(
 			"ts.year-quarter",
 			"ts.year-month",

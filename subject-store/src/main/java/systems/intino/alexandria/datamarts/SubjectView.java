@@ -13,6 +13,8 @@ import systems.intino.alexandria.datamarts.model.Vector;
 import systems.intino.alexandria.datamarts.model.view.fields.CategoricalField;
 import systems.intino.alexandria.datamarts.model.view.fields.NumericalField;
 import systems.intino.alexandria.datamarts.model.view.fields.TemporalField;
+import systems.intino.alexandria.datamarts.model.view.format.YamlFileFormatReader;
+import systems.intino.alexandria.datamarts.model.view.format.YamlFormatReader;
 
 import java.io.*;
 import java.time.*;
@@ -31,6 +33,14 @@ public class SubjectView {
 		this.instants = instants(format.from(), format.to(), format.duration());
 		this.vectors = new HashMap<>();
 		this.build();
+	}
+
+	public SubjectView(SubjectStore store, String format) {
+		this(store, new YamlFormatReader(format).read());
+	}
+
+	public SubjectView(SubjectStore store, File format) throws IOException {
+		this(store, new YamlFileFormatReader(format).read());
 	}
 
 	public List<Column> columns() {

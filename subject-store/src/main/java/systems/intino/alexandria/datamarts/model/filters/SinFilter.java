@@ -2,7 +2,7 @@ package systems.intino.alexandria.datamarts.model.filters;
 
 import systems.intino.alexandria.datamarts.model.Filter;
 
-public class SinFilter implements Filter {
+public record SinFilter() implements Filter {
 
 	@Override
 	public double[] apply(double[] input) {

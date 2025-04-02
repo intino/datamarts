@@ -21,8 +21,8 @@ public class Summary {
 	}
 
 	private Summary(Calculator calculator) {
-		this.sum = calculator.sum;
 		this.count = calculator.count;
+		this.sum = calculator.sum;
 		this.mean = calculator.mean;
 		this.sd = calculator.sd();
 		this.first = calculator.get("first");

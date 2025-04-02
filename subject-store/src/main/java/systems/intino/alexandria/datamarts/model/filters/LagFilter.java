@@ -2,12 +2,10 @@ package systems.intino.alexandria.datamarts.model.filters;
 
 import systems.intino.alexandria.datamarts.model.Filter;
 
-public class LagFilter implements Filter {
-	private final int lag;
+public record LagFilter(int lag) implements Filter {
 
-	public LagFilter(int lag) {
+	public LagFilter {
 		if (lag < 0) throw new IllegalArgumentException("Lag must be non-negative");
-		this.lag = lag;
 	}
 
 	@Override

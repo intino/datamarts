@@ -2,7 +2,7 @@ package systems.intino.alexandria.datamarts.model.filters;
 
 import systems.intino.alexandria.datamarts.model.Filter;
 
-public class ZScoreNormalizationFilter implements Filter {
+public record ZScoreNormalizationFilter() implements Filter {
 
 	@Override
 	public double[] apply(double[] input) {

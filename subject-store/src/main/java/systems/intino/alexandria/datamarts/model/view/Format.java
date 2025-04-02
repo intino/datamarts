@@ -40,6 +40,11 @@ public class Format implements Iterable<Column> {
 		return this;
 	}
 
+	public Format add(List<Column> columns) {
+		this.columns.addAll(columns);
+		return this;
+	}
+
 	@Override
 	public Iterator<Column> iterator() {
 		return columns.iterator();

@@ -2,12 +2,10 @@ package systems.intino.alexandria.datamarts.model.filters;
 
 import systems.intino.alexandria.datamarts.model.Filter;
 
-public class RollingMaxFilter implements Filter {
-	private final int windowSize;
+public record RollingMaxFilter(int windowSize) implements Filter {
 
-	public RollingMaxFilter(int windowSize) {
+	public RollingMaxFilter {
 		if (windowSize <= 1) throw new IllegalArgumentException("Window size must be greater than 1");
-		this.windowSize = windowSize;
 	}
 
 	@Override

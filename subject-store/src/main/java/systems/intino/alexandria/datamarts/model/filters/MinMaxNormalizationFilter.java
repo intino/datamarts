@@ -4,7 +4,7 @@ import systems.intino.alexandria.datamarts.model.Filter;
 
 import static java.lang.Double.NaN;
 
-public class MinMaxNormalizationFilter implements Filter {
+public record MinMaxNormalizationFilter() implements Filter {
 
 	@Override
 	public double[] apply(double[] input) {

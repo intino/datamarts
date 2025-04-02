@@ -30,7 +30,7 @@ public class SubjectView_ {
 		""";
 
 	@Test
-	public void should_export_to_tabular_report_with_temporal_numerical_and_categorical_columns() throws IOException {
+	public void should_export_to_tabular_report_with_format_as_object() throws IOException {
 		try (SubjectStore store = new SubjectStore("map", File.createTempFile("xyz", ":patient.oss"))) {
 			feed(store);
 			Format format = new Format(from, to, Duration.ofDays(7));
@@ -49,6 +49,57 @@ public class SubjectView_ {
 			format.add(new Column("NewTemp","NormTemp * 100"));			SubjectView table = new SubjectView(store, format);
 			ByteArrayOutputStream os = new ByteArrayOutputStream();
 			table.exportTo(os);
+			assertThat(os.toString()).isEqualTo(expected);
+		}
+	}
+
+	@Test
+	public void should_export_to_tabular_report_with_format_as_string() throws IOException {
+		try (SubjectStore store = new SubjectStore("map", File.createTempFile("xyz", ":patient.oss"))) {
+			feed(store);
+			String format = """
+			from: 2025-01
+			to: 2025-02
+			period: P7D
+			columns:
+			  - name: "Year"
+			    calc: "ts.year"
+			
+			  - name: "Month"
+			    calc: "ts.month-of-year"
+			
+			  - name: "Day"
+			    calc: "sin(ts.day-of-month)+cos(ts.month-of-year)"
+			
+			  - name: "TotalTemp"
+			    calc: "temperature.sum"
+			
+			  - name: "AvgTemp"
+			    calc: "temperature.average"
+			
+			  - name: "NormTemp"
+			    calc: "TotalTemp"
+			    filters: ["MinMaxNormalization"]
+			
+			  - name: "Trend"
+			    calc: "AvgTemp"
+			    filters: ["RollingAverage:3"]
+			
+			  - name: "LastTemp"
+			    calc: "temperature.last"
+			
+			  - name: "SkyMode"
+			    calc: "sky.mode"
+			
+			  - name: "SkyCount"
+			    calc: "sky.count"
+			
+			  - name: "NewTemp"
+			    calc: "NormTemp * 100"
+			""";
+		SubjectView view = new SubjectView(store, format);
+			ByteArrayOutputStream os = new ByteArrayOutputStream();
+			view.exportTo(os);
 			assertThat(os.toString()).isEqualTo(expected);
 		}
 	}

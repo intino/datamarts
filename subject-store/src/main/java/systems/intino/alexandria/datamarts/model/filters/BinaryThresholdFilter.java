@@ -4,12 +4,7 @@ import systems.intino.alexandria.datamarts.model.Filter;
 
 import static java.lang.Double.isNaN;
 
-public class BinaryThresholdFilter implements Filter {
-	private final double threshold;
-
-	public BinaryThresholdFilter(double threshold) {
-		this.threshold = threshold;
-	}
+public record BinaryThresholdFilter(double threshold) implements Filter {
 
 	@Override
 	public double[] apply(double[] input) {

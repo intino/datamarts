@@ -2,12 +2,10 @@ package systems.intino.alexandria.datamarts.model.filters;
 
 import systems.intino.alexandria.datamarts.model.Filter;
 
-public class RollingStandardDeviationFilter implements Filter {
-	private final int windowSize;
+public record RollingStandardDeviationFilter(int windowSize) implements Filter {
 
-	public RollingStandardDeviationFilter(int windowSize) {
+	public RollingStandardDeviationFilter {
 		if (windowSize <= 1) throw new IllegalArgumentException("Window size must be greater than 1");
-		this.windowSize = windowSize;
 	}
 
 	@Override
