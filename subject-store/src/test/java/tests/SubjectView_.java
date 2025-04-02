@@ -30,7 +30,7 @@ public class SubjectView_ {
 		""";
 
 	@Test
-	public void should_export_To_tabular_report_with_temporal_numerical_and_categorical_columns() throws IOException {
+	public void should_export_to_tabular_report_with_temporal_numerical_and_categorical_columns() throws IOException {
 		try (SubjectStore store = new SubjectStore("map", File.createTempFile("xyz", ":patient.oss"))) {
 			feed(store);
 			Format format = new Format(from, to, Duration.ofDays(7));

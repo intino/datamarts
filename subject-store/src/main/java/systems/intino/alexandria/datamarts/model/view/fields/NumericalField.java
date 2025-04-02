@@ -13,7 +13,7 @@ public interface NumericalField extends Function<Signal, Double> {
 
 	private static Map<String, NumericalField> create() {
 		Map<String, NumericalField> map = new HashMap<>();
-		map.put("count", s -> (double) s.count());
+		map.put("readings", s -> (double) s.count());
 		map.put("sum", s -> s.summary().sum());
 		map.put("average", s -> s.summary().mean());
 		map.put("sd", s -> s.isEmpty() ? NaN : s.summary().sd());

@@ -9,7 +9,11 @@ import java.util.function.Function;
 public class FunctionFactory {
 	private static final Map<String, Function<Double,Double>> Functions = new HashMap<>();
 	public static Function<DoubleVector, DoubleVector> create(String name) {
-		return vectorize(Functions.getOrDefault(name.toLowerCase(), v->v));
+		return vectorize(Functions.getOrDefault(name.toLowerCase(), v -> notFound(name)));
+	}
+
+	private static Double notFound(String name) {
+		throw new IllegalArgumentException("Function not found: " + name);
 	}
 
 	private static Function<DoubleVector, DoubleVector> vectorize(Function<Double, Double> function) {

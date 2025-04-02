@@ -108,12 +108,16 @@ public class SubjectView {
 
 	private DoubleVector variable(String name) {
 		if (vectors.get(name) instanceof DoubleVector vector) return vector;
-		String tag = tagIn(name);
-		String field = fieldIn(name);
-		if (isTemporal(tag) && TemporalField.contains(field)) return calculate(TemporalField.of(field));
-		if (CategoricalField.contains(field)) return calculate(tag, CategoricalField.of(field));
-		if (NumericalField.contains(field)) return calculate(tag, NumericalField.of(field));
-		throw new RuntimeException(name + " not found");
+		try {
+			String tag = tagIn(name);
+			String field = fieldIn(name);
+			if (isTemporal(tag) && TemporalField.contains(field)) return calculate(TemporalField.of(field));
+			if (CategoricalField.contains(field)) return calculate(tag, CategoricalField.of(field));
+			if (NumericalField.contains(field)) return calculate(tag, NumericalField.of(field));
+		}
+		catch (Exception ignored) {
+		}
+		throw new IllegalArgumentException("Variable not found: " + name);
 	}
 
 	private DoubleVector calculate(TemporalField temporalField) {
