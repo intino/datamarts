@@ -1,8 +1,8 @@
 package tests;
 
 import org.junit.Test;
-import systems.intino.alexandria.datamarts.calculator.VectorCalculator;
-import systems.intino.alexandria.datamarts.model.vectors.DoubleVector;
+import systems.intino.alexandria.datamarts.subjectstore.calculator.VectorCalculator;
+import systems.intino.alexandria.datamarts.subjectstore.model.vectors.DoubleVector;
 
 import java.util.HashMap;
 import java.util.Map;

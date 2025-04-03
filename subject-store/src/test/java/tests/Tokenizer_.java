@@ -1,11 +1,10 @@
 package tests;
 
 import org.junit.Test;
-import systems.intino.alexandria.datamarts.calculator.parser.Token;
-import systems.intino.alexandria.datamarts.calculator.parser.Tokenizer;
+import systems.intino.alexandria.datamarts.subjectstore.calculator.parser.Token;
+import systems.intino.alexandria.datamarts.subjectstore.calculator.parser.Tokenizer;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static systems.intino.alexandria.datamarts.calculator.parser.Token.Type.*;
 
 @SuppressWarnings("ALL")
 public class Tokenizer_ {

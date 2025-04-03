@@ -1,8 +1,8 @@
 package tests;
 
-import systems.intino.alexandria.datamarts.io.registries.SqliteConnection;
-import systems.intino.alexandria.datamarts.model.Point;
-import systems.intino.alexandria.datamarts.SubjectStore;
+import systems.intino.alexandria.datamarts.subjectstore.io.registries.SqliteConnection;
+import systems.intino.alexandria.datamarts.subjectstore.model.Point;
+import systems.intino.alexandria.datamarts.subjectstore.SubjectStore;
 import org.junit.Test;
 
 import java.io.*;
@@ -12,8 +12,6 @@ import java.time.Instant;
 
 import static java.time.temporal.ChronoUnit.DAYS;
 import static org.assertj.core.api.Assertions.assertThat;
-import static systems.intino.alexandria.datamarts.model.TemporalReferences.*;
-import static systems.intino.alexandria.datamarts.model.TemporalReferences.TimeSpan.*;
 
 @SuppressWarnings("NewClassNamingConvention")
 public class SubjectStore_ {

@@ -1,7 +1,7 @@
 package tests;
 
-import systems.intino.alexandria.datamarts.model.Point;
-import systems.intino.alexandria.datamarts.model.series.Sequence;
+import systems.intino.alexandria.datamarts.subjectstore.model.Point;
+import systems.intino.alexandria.datamarts.subjectstore.model.series.Sequence;
 import org.junit.Test;
 
 import java.time.Duration;
@@ -11,7 +11,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.stream.IntStream;
 
-import static systems.intino.alexandria.datamarts.model.TemporalReferences.today;
+import static systems.intino.alexandria.datamarts.subjectstore.model.TemporalReferences.today;
 import static java.time.temporal.ChronoUnit.DAYS;
 import static java.util.stream.Collectors.toList;
 import static org.assertj.core.api.Assertions.assertThat;

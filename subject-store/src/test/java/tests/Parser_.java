@@ -1,7 +1,7 @@
 package tests;
 
 import org.junit.Test;
-import systems.intino.alexandria.datamarts.calculator.parser.Parser;
+import systems.intino.alexandria.datamarts.subjectstore.calculator.parser.Parser;
 
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 

@@ -1,10 +1,10 @@
 package tests;
 
 import org.junit.Test;
-import systems.intino.alexandria.datamarts.model.filters.MinMaxNormalizationFilter;
-import systems.intino.alexandria.datamarts.model.filters.RollingAverageFilter;
-import systems.intino.alexandria.datamarts.model.view.Format;
-import systems.intino.alexandria.datamarts.model.view.format.YamlFormatReader;
+import systems.intino.alexandria.datamarts.subjectstore.model.filters.MinMaxNormalizationFilter;
+import systems.intino.alexandria.datamarts.subjectstore.model.filters.RollingAverageFilter;
+import systems.intino.alexandria.datamarts.subjectstore.model.view.Format;
+import systems.intino.alexandria.datamarts.subjectstore.model.view.format.YamlFormatReader;
 
 import java.time.Duration;
 import java.time.LocalDate;
