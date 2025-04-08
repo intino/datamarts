@@ -12,7 +12,8 @@
 		<module>subject-store</module>
 		<module>led</module>
 		<module>zet</module>
-	</modules>
+        <module>anchor-map</module>
+    </modules>
 
 	<developers>
 		<developer>
