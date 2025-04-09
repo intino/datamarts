@@ -3,17 +3,14 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
-    <parent>
-        <groupId>systems.intino</groupId>
-        <artifactId>datamarts</artifactId>
-        <version>1.0.0</version>
-    </parent>
-
+    <groupId>systems.intino.datamatarts</groupId>
     <artifactId>anchor-map</artifactId>
+    <name>anchor-map</name>
+    <version>1.0.0</version>
 
     <properties>
-        <maven.compiler.source>19</maven.compiler.source>
-        <maven.compiler.target>19</maven.compiler.target>
+        <maven.compiler.source>21</maven.compiler.source>
+        <maven.compiler.target>21</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
 
@@ -46,6 +43,4 @@
             <scope>test</scope>
         </dependency>
     </dependencies>
-
-
 </project>
