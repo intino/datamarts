@@ -1,12 +1,12 @@
 package tests;
 
-import systems.intino.alexandria.datamarts.subjectstore.SubjectView;
+import org.junit.Test;
 import systems.intino.alexandria.datamarts.subjectstore.SubjectStore;
+import systems.intino.alexandria.datamarts.subjectstore.SubjectView;
 import systems.intino.alexandria.datamarts.subjectstore.model.filters.MinMaxNormalizationFilter;
 import systems.intino.alexandria.datamarts.subjectstore.model.filters.RollingAverageFilter;
 import systems.intino.alexandria.datamarts.subjectstore.model.view.Column;
 import systems.intino.alexandria.datamarts.subjectstore.model.view.Format;
-import org.junit.Test;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -14,7 +14,7 @@ import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
 
-import static java.time.temporal.ChronoUnit.*;
+import static java.time.temporal.ChronoUnit.DAYS;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @SuppressWarnings("NewClassNamingConvention")

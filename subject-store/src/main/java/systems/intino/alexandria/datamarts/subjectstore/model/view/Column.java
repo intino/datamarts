@@ -2,7 +2,9 @@ package systems.intino.alexandria.datamarts.subjectstore.model.view;
 
 import systems.intino.alexandria.datamarts.subjectstore.model.Filter;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
 
 public class Column {
 	public final String name;

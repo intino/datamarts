@@ -2,7 +2,10 @@ package systems.intino.alexandria.datamarts.subjectstore.model.series.sequence;
 
 import systems.intino.alexandria.datamarts.subjectstore.model.Point;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 
 public class Summary {
 	private final int count;

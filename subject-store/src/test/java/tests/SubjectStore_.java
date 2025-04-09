@@ -1,9 +1,9 @@
 package tests;
 
+import org.junit.Test;
+import systems.intino.alexandria.datamarts.subjectstore.SubjectStore;
 import systems.intino.alexandria.datamarts.subjectstore.io.registries.SqliteConnection;
 import systems.intino.alexandria.datamarts.subjectstore.model.Point;
-import systems.intino.alexandria.datamarts.subjectstore.SubjectStore;
-import org.junit.Test;
 
 import java.io.*;
 import java.sql.Connection;

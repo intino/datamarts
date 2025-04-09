@@ -1,8 +1,8 @@
 package systems.intino.alexandria.datamarts.subjectstore.model.series;
 
-import systems.intino.alexandria.datamarts.subjectstore.model.TemporalReferences;
 import systems.intino.alexandria.datamarts.subjectstore.model.Point;
 import systems.intino.alexandria.datamarts.subjectstore.model.Series;
+import systems.intino.alexandria.datamarts.subjectstore.model.TemporalReferences;
 import systems.intino.alexandria.datamarts.subjectstore.model.series.signal.Distribution;
 import systems.intino.alexandria.datamarts.subjectstore.model.series.signal.Summary;
 

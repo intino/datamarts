@@ -3,13 +3,13 @@ package systems.intino.alexandria.datamarts.subjectstore;
 import systems.intino.alexandria.datamarts.subjectstore.calculator.VectorCalculator;
 import systems.intino.alexandria.datamarts.subjectstore.model.Filter;
 import systems.intino.alexandria.datamarts.subjectstore.model.TemporalReferences;
+import systems.intino.alexandria.datamarts.subjectstore.model.Vector;
 import systems.intino.alexandria.datamarts.subjectstore.model.series.Sequence;
 import systems.intino.alexandria.datamarts.subjectstore.model.series.Signal;
 import systems.intino.alexandria.datamarts.subjectstore.model.vectors.DoubleVector;
 import systems.intino.alexandria.datamarts.subjectstore.model.vectors.ObjectVector;
-import systems.intino.alexandria.datamarts.subjectstore.model.view.Format;
 import systems.intino.alexandria.datamarts.subjectstore.model.view.Column;
-import systems.intino.alexandria.datamarts.subjectstore.model.Vector;
+import systems.intino.alexandria.datamarts.subjectstore.model.view.Format;
 import systems.intino.alexandria.datamarts.subjectstore.model.view.fields.CategoricalField;
 import systems.intino.alexandria.datamarts.subjectstore.model.view.fields.NumericalField;
 import systems.intino.alexandria.datamarts.subjectstore.model.view.fields.TemporalField;
@@ -17,7 +17,7 @@ import systems.intino.alexandria.datamarts.subjectstore.model.view.format.YamlFi
 import systems.intino.alexandria.datamarts.subjectstore.model.view.format.YamlFormatReader;
 
 import java.io.*;
-import java.time.*;
+import java.time.Instant;
 import java.time.temporal.TemporalAmount;
 import java.util.*;
 

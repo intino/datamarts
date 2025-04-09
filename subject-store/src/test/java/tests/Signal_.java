@@ -1,8 +1,8 @@
 package tests;
 
+import org.junit.Test;
 import systems.intino.alexandria.datamarts.subjectstore.model.Point;
 import systems.intino.alexandria.datamarts.subjectstore.model.series.Signal;
-import org.junit.Test;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -10,11 +10,12 @@ import java.time.Period;
 import java.util.List;
 import java.util.stream.IntStream;
 
-import static systems.intino.alexandria.datamarts.subjectstore.model.TemporalReferences.today;
-import static java.time.temporal.ChronoUnit.*;
+import static java.time.temporal.ChronoUnit.DAYS;
+import static java.time.temporal.ChronoUnit.HOURS;
 import static java.util.stream.Collectors.toList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.data.Percentage.withPercentage;
+import static systems.intino.alexandria.datamarts.subjectstore.model.TemporalReferences.today;
 
 @SuppressWarnings("NewClassNamingConvention")
 public class Signal_ {

@@ -4,17 +4,18 @@ import systems.intino.alexandria.datamarts.subjectstore.calculator.Expression;
 import systems.intino.alexandria.datamarts.subjectstore.calculator.expressions.Constant;
 import systems.intino.alexandria.datamarts.subjectstore.calculator.expressions.NamedFunction;
 import systems.intino.alexandria.datamarts.subjectstore.calculator.expressions.Variable;
-import systems.intino.alexandria.datamarts.calculator.expressions.operators.*;
-import systems.intino.alexandria.datamarts.subjectstore.calculator.expressions.operators.*;
 import systems.intino.alexandria.datamarts.subjectstore.calculator.expressions.operators.Module;
+import systems.intino.alexandria.datamarts.subjectstore.calculator.expressions.operators.*;
 
 import java.util.List;
 import java.util.Stack;
 
 import static java.lang.Double.parseDouble;
-import static systems.intino.alexandria.datamarts.subjectstore.calculator.parser.Parser.Operator.Type.*;
+import static systems.intino.alexandria.datamarts.subjectstore.calculator.parser.Parser.Operator.Type.Binary;
+import static systems.intino.alexandria.datamarts.subjectstore.calculator.parser.Parser.Operator.Type.Unary;
 import static systems.intino.alexandria.datamarts.subjectstore.calculator.parser.Parser.Operator.Unknown;
-import static systems.intino.alexandria.datamarts.subjectstore.calculator.parser.Token.Type.*;
+import static systems.intino.alexandria.datamarts.subjectstore.calculator.parser.Token.Type.BRACE_OPEN;
+import static systems.intino.alexandria.datamarts.subjectstore.calculator.parser.Token.Type.IDENTIFIER;
 
 public class Parser {
 	private final Stack<Expression> output = new Stack<>();

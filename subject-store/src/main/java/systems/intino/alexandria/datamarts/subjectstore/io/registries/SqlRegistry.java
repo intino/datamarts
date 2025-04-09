@@ -1,18 +1,19 @@
 package systems.intino.alexandria.datamarts.subjectstore.io.registries;
 
-import systems.intino.alexandria.datamarts.subjectstore.io.Registry;
-import systems.intino.alexandria.datamarts.subjectstore.io.Bundle;
 import systems.intino.alexandria.datamarts.subjectstore.SubjectStore.RegistryException;
+import systems.intino.alexandria.datamarts.subjectstore.io.Bundle;
+import systems.intino.alexandria.datamarts.subjectstore.io.Registry;
 
 import java.io.IOException;
 import java.io.OutputStream;
 import java.sql.*;
 import java.time.Instant;
-import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
 
+import static java.sql.Types.*;
 import static systems.intino.alexandria.datamarts.subjectstore.model.TemporalReferences.BigBang;
 import static systems.intino.alexandria.datamarts.subjectstore.model.TemporalReferences.Legacy;
-import static java.sql.Types.*;
 
 public class SqlRegistry implements Registry {
 	private final Connection connection;

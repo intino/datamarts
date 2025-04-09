@@ -1,12 +1,12 @@
 package systems.intino.alexandria.datamarts.subjectstore;
 
+import systems.intino.alexandria.datamarts.subjectstore.io.Bundle;
 import systems.intino.alexandria.datamarts.subjectstore.io.Feed;
 import systems.intino.alexandria.datamarts.subjectstore.io.Registry;
-import systems.intino.alexandria.datamarts.subjectstore.io.registries.SqliteConnection;
-import systems.intino.alexandria.datamarts.subjectstore.io.Bundle;
-import systems.intino.alexandria.datamarts.subjectstore.model.TemporalReferences;
-import systems.intino.alexandria.datamarts.subjectstore.model.Point;
 import systems.intino.alexandria.datamarts.subjectstore.io.registries.SqlRegistry;
+import systems.intino.alexandria.datamarts.subjectstore.io.registries.SqliteConnection;
+import systems.intino.alexandria.datamarts.subjectstore.model.Point;
+import systems.intino.alexandria.datamarts.subjectstore.model.TemporalReferences;
 import systems.intino.alexandria.datamarts.subjectstore.model.series.Sequence;
 import systems.intino.alexandria.datamarts.subjectstore.model.series.Signal;
 
