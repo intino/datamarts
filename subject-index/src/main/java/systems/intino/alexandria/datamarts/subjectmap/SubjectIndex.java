@@ -15,12 +15,11 @@ import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
-import static systems.intino.alexandria.datamarts.subjectmap.model.Subject.Null;
-
 public class SubjectIndex implements Closeable {
 	private final Registry registry;
 	private final Lookup<Subject> subjects;
 	private final Lookup<Token> tokens;
+	private final Subject subjectNull;
 
 	public SubjectIndex(File file) {
 		this(SqliteConnection.from(file));
@@ -32,35 +31,21 @@ public class SubjectIndex implements Closeable {
 
 	public SubjectIndex(Connection connection) {
 		this.registry = new SqlRegistry(connection);
-		this.subjects = new Lookup<>(registry.subjects(), subject -> Subject.of(subject, this::children), this::insert);
-		this.tokens = new Lookup<>(registry.tokens(), Token::deserialize, this::insert);
-	}
-
-	private List<Subject> children(Subject subject) {
-		return subjects.stream()
-				.filter(s -> s.parent().equals(subject))
-				.toList();
-	}
-
-	public TokenQuery tokens() {
-		return new TokenQuery() {
-			public TokenSet of(Subject subject) {
-				int id = subjects.id(subject);
-				return new TokenSet(id < 0 ? List.of() : tokens(registry.tokensOf(id)).toList());
-			}
-		};
+		this.subjects = new Lookup<>(registry.subjects(), Subject::of, this::insert);
+		this.tokens = new Lookup<>(registry.tokens(), Token::of, this::insert);
+		this.subjectNull = new Subject("", context());
 	}
 
 	public SubjectQuery subjects(String type) {
 		return new SubjectQuery() {
 
 			@Override
-			public SubjectSet all() {
+			public Subjects all() {
 				return subjectFilter(type).all();
 			}
 
 			@Override
-			public SubjectSet roots() {
+			public Subjects roots() {
 				return subjectFilter(type).roots();
 			}
 
@@ -86,20 +71,32 @@ public class SubjectIndex implements Closeable {
 	}
 
 	public Subject get(Subject subject) {
-		return subjects.find(subject, Null);
+		return subjects.contains(subject) ? wrap(subject) : subjectNull;
 	}
 
-	public interface TokenQuery {
-		default TokenSet of(String path) {
-			return of(Subject.of(path));
-		}
-		TokenSet of(Subject subject);
+	private Subject.Context context() {
+		return new Subject.Context(this::children, this::tokens);
+	}
+
+	private Subjects children(Subject subject) {
+		return new Subjects(subjects.stream()
+				.filter(s -> s.parent().equals(subject))
+				.toList());
+	}
+
+	private Tokens tokens(Subject subject) {
+		int id = subjects.id(subject);
+		return new Tokens(id < 0 ? List.of() : tokens(registry.tokensOf(id)).toList());
+	}
+
+	public Tokens tokens() {
+		return new Tokens(tokens.stream().toList());
 	}
 
 	public interface SubjectQuery {
-		SubjectSet all();
+		Subjects all();
+		Subjects roots();
 
-		SubjectSet roots();
 		AttributeFilter where(String... keys);
 		SubjectFilter with(String user, String mail);
 		SubjectFilter without(String description, String simulation);
@@ -108,20 +105,20 @@ public class SubjectIndex implements Closeable {
 	private AttributeFilter attributeFilter(String type, Set<String> keys) {
 		return new AttributeFilter() {
 			@Override
-			public SubjectSet contains(String value) {
+			public Subjects contains(String value) {
 				List<Integer> tokens = filterContaining(value);
 				return subjectSetWith(tokens);
 			}
 
 			@Override
-			public SubjectSet matches(String value) {
+			public Subjects matches(String value) {
 				List<Integer> tokens = filterFitting(value);
 				return subjectSetWith(tokens);
 			}
 
-			private SubjectSet subjectSetWith(List<Integer> tokens) {
+			private Subjects subjectSetWith(List<Integer> tokens) {
 				List<Subject> subjects = tokens.isEmpty() ? List.of() : subjects(registry.subjectsFilteredBy(subjectsWith(type), tokens)).toList();
-				return new SubjectSet(subjects);
+				return new Subjects(subjects);
 			}
 
 			private List<Integer> filterFitting(String value) {
@@ -147,6 +144,7 @@ public class SubjectIndex implements Closeable {
 	private SubjectFilter subjectFilter(String type) {
 		return new SubjectFilter() {
 			private final List<Integer> condition = new ArrayList<>();
+
 			@Override
 			public SubjectFilter with(Token token) {
 				if (!tokens.contains(token)) return SubjectFilter.Empty;
@@ -162,27 +160,26 @@ public class SubjectIndex implements Closeable {
 			}
 
 			@Override
-			public SubjectSet all() {
-				return calculate(s -> true);
+			public Subjects all() {
+				return retrieve(s -> true);
 			}
 
 			@Override
-			public SubjectSet roots() {
-				return calculate(s -> s.parent().isNull());
+			public Subjects roots() {
+				return retrieve(s -> s.parent().isNull());
 			}
 
-			private SubjectSet calculate(Predicate<Subject> predicate) {
+			private Subjects retrieve(Predicate<Subject> predicate) {
 				List<Integer> candidates = subjectsWith(type);
 				List<Integer> search = registry.subjectsFilteredBy(candidates, condition);
 				List<Subject> subjects = subjects(search).filter(predicate).toList();
-				return new SubjectSet(subjects);
+				return new Subjects(subjects);
 			}
 		};
 	}
 
 	private List<Integer> subjectsWith(String type) {
 		return subjects.stream()
-				.filter(Objects::nonNull)
 				.filter(s -> s.is(type))
 				.map(subjects::id)
 				.toList();
@@ -200,7 +197,7 @@ public class SubjectIndex implements Closeable {
 
 	public Indexing on(Subject subject) {
 		return new Indexing() {
-			private final int id = subjects.add(wrap(subject));
+			private final int id = subjects.add(subject);
 
 			@Override
 			public Indexing rename(String identifier) {
@@ -234,7 +231,7 @@ public class SubjectIndex implements Closeable {
 	}
 
 	private Subject wrap(Subject subject) {
-		return new Subject(subject.path(), this::children);
+		return new Subject(subject.path(), context());
 	}
 
 	public void drop(String subject) {
@@ -264,7 +261,7 @@ public class SubjectIndex implements Closeable {
 	}
 
 	private Stream<Subject> subjects(List<Integer> search) {
-		return search.stream().map(subjects::get);
+		return search.stream().map(subjects::get).map(this::wrap);
 	}
 
 	private Stream<Token> tokens(List<Integer> tokens) {
@@ -342,7 +339,7 @@ public class SubjectIndex implements Closeable {
 		}
 
 		public Stream<T> stream() {
-			return list.stream();
+			return list.stream().filter(Objects::nonNull);
 		}
 
 		public void set(int id, T t) {
@@ -350,14 +347,7 @@ public class SubjectIndex implements Closeable {
 			map.put(t, id);
 			list.set(id - 1, t);
 		}
-
-
-		public T find(T t, T orElse) {
-			int id = id(t);
-			return id > 0 ? get(id) : orElse;
-		}
 	}
-
 
 	public interface SubjectFilter {
 		SubjectFilter Empty = emptyQuery();
@@ -374,15 +364,15 @@ public class SubjectIndex implements Closeable {
 			return without(new Token(key, value));
 		}
 
-		SubjectSet all();
+		Subjects all();
 
-		SubjectSet roots();
+		Subjects roots();
 	}
 
 	public interface AttributeFilter {
-		SubjectSet contains(String value);
+		Subjects contains(String value);
 
-		SubjectSet matches(String value);
+		Subjects matches(String value);
 	}
 
 	private static SubjectFilter emptyQuery() {
@@ -399,12 +389,12 @@ public class SubjectIndex implements Closeable {
 			}
 
 			@Override
-			public SubjectSet roots() {
-				return new SubjectSet(List.of());
+			public Subjects roots() {
+				return new Subjects(List.of());
 			}
 
 			@Override
-			public SubjectSet all() {
+			public Subjects all() {
 				return roots();
 			}
 		};

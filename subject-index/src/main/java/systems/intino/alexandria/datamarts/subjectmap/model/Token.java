@@ -2,7 +2,12 @@ package systems.intino.alexandria.datamarts.subjectmap.model;
 
 public record Token(String key, String value) {
 
-	public static Token deserialize(String str) {
+	public Token {
+		key = key.trim();
+		value = value.trim();
+	}
+
+	public static Token of(String str) {
 		if (str == null || str.isEmpty()) return null;
 		String[] split = str.split("=");
 		return new Token(split[0], split[1]);

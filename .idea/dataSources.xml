@@ -19,11 +19,11 @@
         </library>
       </libraries>
     </data-source>
-    <data-source source="LOCAL" name="xxx" uuid="92630adc-3bb1-4477-924f-f30094484a1a">
+    <data-source source="LOCAL" name="more" uuid="d53ba6cf-35e4-4903-bbe7-d157a1a289d6">
       <driver-ref>sqlite.xerial</driver-ref>
       <synchronize>true</synchronize>
       <jdbc-driver>org.sqlite.JDBC</jdbc-driver>
-      <jdbc-url>jdbc:sqlite:$PROJECT_DIR$/subject-index/xxx.iam</jdbc-url>
+      <jdbc-url>jdbc:sqlite:$PROJECT_DIR$/subject-index/more.inx</jdbc-url>
       <jdbc-additional-properties>
         <property name="com.intellij.clouds.kubernetes.db.enabled" value="false" />
       </jdbc-additional-properties>
