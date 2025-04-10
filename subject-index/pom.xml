@@ -4,13 +4,13 @@
 		 xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>systems.intino.datamatarts</groupId>
-	<artifactId>anchor-map</artifactId>
-	<name>anchor-map</name>
+	<artifactId>subject-index</artifactId>
+	<name>subject-index</name>
 	<version>1.0.0</version>
 	<description>
-		anchor-map is a lightweight, embeddable inverted index that maps anchor identifiers to sets of tokens. It
+		SubjectIndex is a lightweight, embeddable inverted index that maps subject identifiers to sets of tokens. It
 		supports setting and unsetting arbitrary key-value pairs (tokens), and provides conditional search by presence
-		or absence of tokens. AnchorMap is ideal for use cases where fast token-based tagging and retrieval of anchors
+		or absence of tokens. SubjectIndex is ideal for use cases where fast token-based tagging and retrieval of subjects
 		is needed.
 	</description>
 	<url>https://github.com/intino/datamarts</url>
@@ -112,11 +112,6 @@
 			<groupId>org.xerial</groupId>
 			<artifactId>sqlite-jdbc</artifactId>
 			<version>3.49.1.0</version>
-		</dependency>
-		<dependency>
-			<groupId>com.zaxxer</groupId>
-			<artifactId>HikariCP</artifactId>
-			<version>6.3.0</version>
 		</dependency>
 		<dependency>
 			<groupId>junit</groupId>

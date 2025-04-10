@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="DataSourceManagerImpl" format="xml" multifile-model="true">
-    <data-source source="LOCAL" name="index" uuid="05e616e3-b9c2-4f7c-b757-41d967e05084">
+    <data-source source="LOCAL" name="test1" uuid="5646fcaa-7fde-40d4-878b-75169a07fce4">
       <driver-ref>sqlite.xerial</driver-ref>
       <synchronize>true</synchronize>
       <jdbc-driver>org.sqlite.JDBC</jdbc-driver>
-      <jdbc-url>jdbc:sqlite:$PROJECT_DIR$/anchor-map/index.iam</jdbc-url>
+      <jdbc-url>jdbc:sqlite:$PROJECT_DIR$/anchor-map/test1.iam</jdbc-url>
       <jdbc-additional-properties>
         <property name="com.intellij.clouds.kubernetes.db.enabled" value="false" />
       </jdbc-additional-properties>
