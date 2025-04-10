@@ -7,6 +7,15 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 public record SubjectSet(List<Subject> subjects) implements Iterable<Subject> {
+
+	public Subject get(int index) {
+		return subjects.get(index);
+	}
+
+	public int size() {
+		return subjects.size();
+	}
+
 	public String serialize() {
 		return subjects.stream()
 				.filter(Objects::nonNull)
@@ -16,10 +25,6 @@ public record SubjectSet(List<Subject> subjects) implements Iterable<Subject> {
 
 	public SubjectSet filter(Predicate<Subject> predicate) {
 		return new SubjectSet(subjects.stream().filter(predicate).toList());
-	}
-
-	public int size() {
-		return subjects.size();
 	}
 
 	public boolean isEmpty() {

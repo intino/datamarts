@@ -7,14 +7,19 @@ public interface Registry extends Closeable {
 	List<String> subjects();
 	List<String> tokens();
 
-	int insertSubject(String subject);
-	int insertToken(String token);
+	List<Integer> tokensOf(int subject);
+	List<Integer> exclusiveTokensOf(int subject);
+	List<Integer> subjectsFilteredBy(List<Integer> tokens);
+
+	void rename(int id, String name);
+
+	int insertSubject(String name);
+	int insertToken(String name);
 
 	void link(int subject, int token);
 	void unlink(int subject, int token);
-	void drop(int subject);
 
+	void drop(int subject);
 	void commit();
-	List<Integer> tokensOf(int subject);
-	List<Integer> subjectsFilteredBy(List<Integer> tokens);
+
 }

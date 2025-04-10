@@ -41,6 +41,19 @@ public class SqlRegistry implements Registry {
 	}
 
 	@Override
+	public void rename(int id, String name) {
+		try {
+			PreparedStatement statement = statementProvider.get("rename-subject");
+			statement.setString(1, name);
+			statement.setInt(2, id);
+			statement.executeUpdate();
+		} catch (SQLException e) {
+			throw new RuntimeException(e);
+		}
+
+	}
+
+	@Override
 	public void link(int subject, int token) {
 		execute(subject, token, "link");
 	}
@@ -53,6 +66,15 @@ public class SqlRegistry implements Registry {
 	@Override
 	public List<Integer> tokensOf(int subject) {
 		try (ResultSet rs = selectTokensOf(subject)) {
+			return readIntegers(rs);
+		} catch (SQLException e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	@Override
+	public List<Integer> exclusiveTokensOf(int subject) {
+		try (ResultSet rs = selectExclusiveTokensOf(subject)) {
 			return readIntegers(rs);
 		} catch (SQLException e) {
 			throw new RuntimeException(e);
@@ -108,6 +130,14 @@ public class SqlRegistry implements Registry {
 		return statement.executeQuery();
 	}
 
+	private ResultSet selectExclusiveTokensOf(int subject) throws SQLException {
+		PreparedStatement statement = statementProvider.get("get-exclusive-subject-tokens");
+		statement.setInt(1, subject);
+		statement.setInt(2, subject);
+		statement.executeQuery();
+		return statement.executeQuery();
+	}
+
 	private ResultSet selectSubjectsWith(List<Integer> tokens) throws SQLException {
 		String sql = sqlIn(tokens);
 		PreparedStatement statement = connection.prepareStatement(sql);
@@ -122,7 +152,7 @@ public class SqlRegistry implements Registry {
 
 	private static String exists(List<Integer> tokens) {
 		int[] items = positive(tokens);
-		return items.length > 0 ? " AND subject_id IN (SELECT subject_id FROM links WHERE token_id IN (" + placeholders(items) + "))" : "";
+		return items.length > 0 ? " AND subject_id IN (SELECT subject_id FROM links WHERE token_id IN " + placeholders(items) + ")" : "";
 	}
 
 	private static String notExists(List<Integer> tokens) {
@@ -168,10 +198,10 @@ public class SqlRegistry implements Registry {
 	}
 
 	@Override
-	public int insertSubject(String subject) {
+	public int insertSubject(String name) {
 		try {
 			PreparedStatement statement = statementProvider.get("insert-subject");
-			statement.setString(1, subject);
+			statement.setString(1, name);
 			statement.executeUpdate();
 			ResultSet keys = statement.getGeneratedKeys();
 			if (keys.next()) return keys.getInt(1);
@@ -183,10 +213,10 @@ public class SqlRegistry implements Registry {
 	}
 
 	@Override
-	public int insertToken(String token) {
+	public int insertToken(String name) {
 		try {
 			PreparedStatement statement = statementProvider.get("insert-token");
-			statement.setString(1, token);
+			statement.setString(1, name);
 			statement.executeUpdate();
 			ResultSet keys = statement.getGeneratedKeys();
 			if (keys.next()) return keys.getInt(1);
@@ -200,9 +230,22 @@ public class SqlRegistry implements Registry {
 	@Override
 	public void drop(int subject) {
 		try {
-			PreparedStatement statement = statementProvider.get("delete-subject");
-			statement.setInt(1, subject);
-			statement.executeUpdate();
+			{
+				PreparedStatement statement = statementProvider.get("delete-subject");
+				statement.setInt(1, subject);
+				statement.executeUpdate();
+			}
+			{
+				PreparedStatement statement = statementProvider.get("delete-subject-tokens");
+				statement.setInt(1, subject);
+				statement.setInt(2, subject);
+				statement.executeUpdate();
+			}
+			{
+				PreparedStatement statement = statementProvider.get("delete-subject-links");
+				statement.setInt(1, subject);
+				statement.executeUpdate();
+			}
 			connection.commit();
 		}
 		catch (SQLException e) {
@@ -223,9 +266,13 @@ public class SqlRegistry implements Registry {
 			statements.put("select-subject", create("SELECT name FROM subject ORDER BY id"));
 			statements.put("select-tokens", create("SELECT name FROM tokens ORDER BY id"));
 			statements.put("get-subject-tokens", create("SELECT token_id FROM links WHERE subject_id = ?"));
+			statements.put("get-exclusive-subject-tokens", create("SELECT id FROM tokens WHERE name IS NOT NULL AND id IN (SELECT token_id FROM links WHERE subject_id = ? AND token_id NOT IN (SELECT token_id FROM links WHERE subject_id != ?))"));
 			statements.put("insert-subject", create("INSERT INTO subject (name) VALUES (?)"));
 			statements.put("insert-token", create("INSERT INTO tokens (name) VALUES (?)"));
+			statements.put("rename-subject", create("UPDATE subject SET name = ? WHERE id = ?"));
 			statements.put("delete-subject", create("UPDATE subject SET name = NULL WHERE id = ?"));
+			statements.put("delete-subject-links", create("DELETE FROM links WHERE subject_id = ?"));
+			statements.put("delete-subject-tokens", create("UPDATE tokens SET name = NULL WHERE name IS NOT NULL AND id IN (SELECT token_id FROM links WHERE subject_id = ? AND token_id NOT IN (SELECT token_id FROM links WHERE subject_id != ?))"));
 			statements.put("link", create("INSERT OR IGNORE INTO links (subject_id, token_id) VALUES (?, ?)"));
 			statements.put("unlink", create("DELETE FROM links WHERE subject_id = ? and token_id = ?"));
 			return statements;
