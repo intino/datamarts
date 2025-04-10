@@ -9,7 +9,7 @@ public interface Registry extends Closeable {
 
 	List<Integer> tokensOf(int subject);
 	List<Integer> exclusiveTokensOf(int subject);
-	List<Integer> subjectsFilteredBy(List<Integer> tokens);
+	List<Integer> subjectsFilteredBy(List<Integer> subjects, List<Integer> tokens);
 
 	void rename(int id, String name);
 

@@ -82,8 +82,8 @@ public class SqlRegistry implements Registry {
 	}
 
 	@Override
-	public List<Integer> subjectsFilteredBy(List<Integer> tokens) {
-		try (ResultSet rs = selectSubjectsWith(tokens)) {
+	public List<Integer> subjectsFilteredBy(List<Integer> subjects, List<Integer> tokens) {
+		try (ResultSet rs = selectSubjectsWith(subjects, tokens)) {
 			return readIntegers(rs);
 		} catch (SQLException e) {
 			throw new RuntimeException(e);
@@ -138,15 +138,15 @@ public class SqlRegistry implements Registry {
 		return statement.executeQuery();
 	}
 
-	private ResultSet selectSubjectsWith(List<Integer> tokens) throws SQLException {
-		String sql = sqlIn(tokens);
+	private ResultSet selectSubjectsWith(List<Integer> subjects, List<Integer> tokens) throws SQLException {
+		String sql = sqlFor(subjects, tokens);
 		PreparedStatement statement = connection.prepareStatement(sql);
 		return statement.executeQuery();
 	}
 
-	private static final String SELECT_SUBJECTS = "SELECT DISTINCT subject_id FROM links";
-	private static String sqlIn(List<Integer> tokens) {
-		return (SELECT_SUBJECTS + exists(tokens) + notExists(tokens))
+	private static final String SELECT_SUBJECTS = "SELECT DISTINCT subject_id FROM links WHERE subject_id in ";
+	private static String sqlFor(List<Integer> subjects, List<Integer> tokens) {
+		return (SELECT_SUBJECTS + placeholders(subjects) + exists(tokens) + notExists(tokens))
 				.replace("links AND", "links WHERE");
 	}
 
@@ -174,6 +174,10 @@ public class SqlRegistry implements Registry {
 
 	private static String placeholders(int[] array) {
 		return Arrays.toString(array).replace('[', '(').replace(']', ')');
+	}
+
+	private static String placeholders(List<Integer> list) {
+		return placeholders(list.stream().mapToInt(Integer::intValue).toArray());
 	}
 
 	private void execute(int subject, int token, String order) {

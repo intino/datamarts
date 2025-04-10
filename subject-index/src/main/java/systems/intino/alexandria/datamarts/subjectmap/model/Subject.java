@@ -5,6 +5,7 @@ import java.util.Objects;
 import java.util.function.Function;
 
 public record Subject(String path, Function<Subject, List<Subject>> childrenLookup) {
+	public static final String Any = "*";
 	public static final Subject Null = new Subject("", s->List.of());
 
 	public static Subject of(String path, Function<Subject, List<Subject>> childrenLookup) {
@@ -48,7 +49,7 @@ public record Subject(String path, Function<Subject, List<Subject>> childrenLook
 	}
 
 	public boolean is(String type) {
-		return this.type().equals(type);
+		return type.equals("*") || this.type().equals(type);
 	}
 
 	public boolean isNull() {

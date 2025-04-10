@@ -11,6 +11,7 @@ import java.io.IOException;
 import java.sql.Connection;
 import java.util.*;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
@@ -50,27 +51,32 @@ public class SubjectIndex implements Closeable {
 		};
 	}
 
-	public SubjectQuery subjects() {
+	public SubjectQuery subjects(String type) {
 		return new SubjectQuery() {
 
 			@Override
+			public SubjectSet all() {
+				return subjectFilter(type).all();
+			}
+
+			@Override
 			public SubjectSet roots() {
-				return subjectFilter().roots();
+				return subjectFilter(type).roots();
 			}
 
 			@Override
 			public AttributeFilter where(String... keys) {
-				return attributeFilter(Set.of(keys));
+				return attributeFilter(type, Set.of(keys));
 			}
 
 			@Override
 			public SubjectFilter with(String key, String value) {
-				return subjectFilter().with(key, value);
+				return subjectFilter(type).with(key, value);
 			}
 
 			@Override
 			public SubjectFilter without(String key, String value) {
-				return subjectFilter().without(key, value);
+				return subjectFilter(type).without(key, value);
 			}
 		};
 	}
@@ -91,13 +97,15 @@ public class SubjectIndex implements Closeable {
 	}
 
 	public interface SubjectQuery {
+		SubjectSet all();
+
 		SubjectSet roots();
 		AttributeFilter where(String... keys);
 		SubjectFilter with(String user, String mail);
 		SubjectFilter without(String description, String simulation);
 	}
 
-	private AttributeFilter attributeFilter(Set<String> keys) {
+	private AttributeFilter attributeFilter(String type, Set<String> keys) {
 		return new AttributeFilter() {
 			@Override
 			public SubjectSet contains(String value) {
@@ -112,7 +120,7 @@ public class SubjectIndex implements Closeable {
 			}
 
 			private SubjectSet subjectSetWith(List<Integer> tokens) {
-				List<Subject> subjects = tokens.isEmpty() ? List.of() : subjects(registry.subjectsFilteredBy(tokens)).toList();
+				List<Subject> subjects = tokens.isEmpty() ? List.of() : subjects(registry.subjectsFilteredBy(subjectsWith(type), tokens)).toList();
 				return new SubjectSet(subjects);
 			}
 
@@ -136,7 +144,7 @@ public class SubjectIndex implements Closeable {
 		};
 	}
 
-	private SubjectFilter subjectFilter() {
+	private SubjectFilter subjectFilter(String type) {
 		return new SubjectFilter() {
 			private final List<Integer> condition = new ArrayList<>();
 			@Override
@@ -154,12 +162,30 @@ public class SubjectIndex implements Closeable {
 			}
 
 			@Override
+			public SubjectSet all() {
+				return calculate(s -> true);
+			}
+
+			@Override
 			public SubjectSet roots() {
-				List<Integer> search = registry.subjectsFilteredBy(condition);
-				List<Subject> subjects = subjects(search).filter(s->s.parent().isNull()).toList();
+				return calculate(s -> s.parent().isNull());
+			}
+
+			private SubjectSet calculate(Predicate<Subject> predicate) {
+				List<Integer> candidates = subjectsWith(type);
+				List<Integer> search = registry.subjectsFilteredBy(candidates, condition);
+				List<Subject> subjects = subjects(search).filter(predicate).toList();
 				return new SubjectSet(subjects);
 			}
 		};
+	}
+
+	private List<Integer> subjectsWith(String type) {
+		return subjects.stream()
+				.filter(Objects::nonNull)
+				.filter(s -> s.is(type))
+				.map(subjects::id)
+				.toList();
 	}
 
 	private final Map<String, Pattern> patterns = new HashMap<>();
@@ -348,32 +374,39 @@ public class SubjectIndex implements Closeable {
 			return without(new Token(key, value));
 		}
 
+		SubjectSet all();
+
 		SubjectSet roots();
-
-		private static SubjectFilter emptyQuery() {
-			return new SubjectFilter() {
-
-				@Override
-				public SubjectFilter with(Token token) {
-					return this;
-				}
-
-				@Override
-				public SubjectFilter without(Token token) {
-					return this;
-				}
-
-				@Override
-				public SubjectSet roots() {
-					return new SubjectSet(List.of());
-				}
-			};
-		}
 	}
 
 	public interface AttributeFilter {
 		SubjectSet contains(String value);
 
 		SubjectSet matches(String value);
+	}
+
+	private static SubjectFilter emptyQuery() {
+		return new SubjectFilter() {
+
+			@Override
+			public SubjectFilter with(Token token) {
+				return this;
+			}
+
+			@Override
+			public SubjectFilter without(Token token) {
+				return this;
+			}
+
+			@Override
+			public SubjectSet roots() {
+				return new SubjectSet(List.of());
+			}
+
+			@Override
+			public SubjectSet all() {
+				return roots();
+			}
+		};
 	}
 }
