@@ -104,6 +104,7 @@
 				<extensions>true</extensions>
 				<configuration>
 					<publishingServerId>intino-sonatype</publishingServerId>
+					<autoPublish>true</autoPublish>
 				</configuration>
 			</plugin>
 		</plugins>
