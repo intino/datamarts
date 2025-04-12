@@ -12,9 +12,9 @@ import java.util.Random;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 
-import static systems.intino.datamarts.led.util.BitUtils.maxPossibleNumber;
-import static systems.intino.datamarts.led.util.BitUtils.toBinaryString;
-import static systems.intino.datamarts.led.util.memory.MemoryUtils.memset;
+import static systems.intino.datamarts.subjectstore.subjects.led.util.BitUtils.maxPossibleNumber;
+import static systems.intino.datamarts.subjectstore.subjects.led.util.BitUtils.toBinaryString;
+import static systems.intino.datamarts.subjectstore.subjects.led.util.memory.MemoryUtils.memset;
 import static systems.intino.test.schemas.TestSchema.*;
 import static java.nio.ByteOrder.BIG_ENDIAN;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;

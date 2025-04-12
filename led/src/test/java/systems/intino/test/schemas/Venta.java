@@ -1,11 +1,11 @@
 package systems.intino.test.schemas;
 
-import systems.intino.datamarts.led.Schema;
-import systems.intino.datamarts.led.allocators.SchemaFactory;
-import systems.intino.datamarts.led.buffers.store.ByteBufferStore;
-import systems.intino.datamarts.led.buffers.store.ByteStore;
-import systems.intino.datamarts.led.util.memory.MemoryAddress;
-import systems.intino.datamarts.led.util.memory.MemoryUtils;
+import systems.intino.datamarts.subjectstore.subjects.led.Schema;
+import systems.intino.datamarts.subjectstore.subjects.led.allocators.SchemaFactory;
+import systems.intino.datamarts.subjectstore.subjects.led.buffers.store.ByteBufferStore;
+import systems.intino.datamarts.subjectstore.subjects.led.buffers.store.ByteStore;
+import systems.intino.datamarts.subjectstore.subjects.led.util.memory.MemoryAddress;
+import systems.intino.datamarts.subjectstore.subjects.led.util.memory.MemoryUtils;
 
 import java.nio.ByteBuffer;
 import java.util.UUID;

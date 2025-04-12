@@ -1,9 +1,12 @@
 package systems.intino.test;
 
-import systems.intino.datamarts.led.*;
-import systems.intino.datamarts.led.allocators.SchemaAllocator;
-import systems.intino.datamarts.led.allocators.indexed.ListAllocator;
-import systems.intino.datamarts.led.leds.IteratorLedStream;
+import systems.intino.datamarts.subjectstore.subjects.led.Led;
+import systems.intino.datamarts.subjectstore.subjects.led.LedReader;
+import systems.intino.datamarts.subjectstore.subjects.led.LedStream;
+import systems.intino.datamarts.subjectstore.subjects.led.LedWriter;
+import systems.intino.datamarts.subjectstore.subjects.led.allocators.SchemaAllocator;
+import systems.intino.datamarts.subjectstore.subjects.led.allocators.indexed.ListAllocator;
+import systems.intino.datamarts.subjectstore.subjects.led.leds.IteratorLedStream;
 import systems.intino.test.schemas.TestSchema;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -20,7 +23,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
-import static systems.intino.datamarts.led.util.BitUtils.maxPossibleNumber;
+import static systems.intino.datamarts.subjectstore.subjects.led.util.BitUtils.maxPossibleNumber;
 import static systems.intino.test.schemas.TestSchema.*;
 import static org.junit.Assert.assertEquals;
 

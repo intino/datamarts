@@ -1,8 +1,8 @@
 package tests;
 
-import systems.intino.alexandria.datamarts.io.registries.SqliteConnection;
-import systems.intino.alexandria.datamarts.model.Point;
-import systems.intino.alexandria.datamarts.SubjectStore;
+import systems.intino.datamarts.subjectstore.io.registries.SqliteConnection;
+import systems.intino.datamarts.subjectstore.model.Point;
+import systems.intino.datamarts.subjectstore.SubjectStore;
 import org.junit.Test;
 
 import java.io.*;
@@ -12,8 +12,9 @@ import java.time.Instant;
 
 import static java.time.temporal.ChronoUnit.DAYS;
 import static org.assertj.core.api.Assertions.assertThat;
-import static systems.intino.alexandria.datamarts.model.TemporalReferences.*;
-import static systems.intino.alexandria.datamarts.model.TemporalReferences.TimeSpan.*;
+import static systems.intino.datamarts.subjectstore.model.TemporalReferences.Legacy;
+import static systems.intino.datamarts.subjectstore.model.TemporalReferences.TimeSpan.*;
+import static systems.intino.datamarts.subjectstore.model.TemporalReferences.today;
 
 @SuppressWarnings("NewClassNamingConvention")
 public class SubjectStore_ {
@@ -25,10 +26,10 @@ public class SubjectStore_ {
 	@Test
 	public void should_handle_empty_store() {
 		File file = new File("patient.oss");
-		try (SubjectStore store = new SubjectStore("123:patient", file)) {
-			assertThat(store.id()).isEqualTo("123");
+		try (SubjectStore store = new SubjectStore("123.patient", file)) {
+			assertThat(store.name()).isEqualTo("123");
 			assertThat(store.type()).isEqualTo("patient");
-			assertThat(store.name()).isEqualTo("123:patient");
+			assertThat(store.identifier()).isEqualTo("123.patient");
 			assertThat(store.size()).isEqualTo(0);
 			assertThat(store.exists("field")).isFalse();
 			assertThat(store.currentNumber("field")).isNull();
@@ -47,7 +48,7 @@ public class SubjectStore_ {
 	public void should_ignore_feed_without_data() throws IOException {
 		File file = File.createTempFile("port", ".oss");
 		try (SubjectStore store = new SubjectStore("00000", file)) {
-			store.feed(Instant.now(), "Skip").terminate();
+			store.on(Instant.now(), "Skip").commit();
 			assertThat(store.size()).isEqualTo(0);
 		}
 	}
@@ -55,7 +56,7 @@ public class SubjectStore_ {
 	@Test
 	public void should_return_most_recent_value_as_current() throws IOException {
 		File file = File.createTempFile("patient", ".oss");
-		try (SubjectStore store = new SubjectStore("12345:patient", file)) {
+		try (SubjectStore store = new SubjectStore("12345.patient", file)) {
 			feed_batch(store);
 			test_batch(store);
 		}
@@ -66,7 +67,7 @@ public class SubjectStore_ {
 	public void should_dump_and_restore_events() throws IOException {
 		File file = new File("patient.oss");
 		OutputStream os = new ByteArrayOutputStream();
-		try (SubjectStore store = new SubjectStore("12345:patient", file)) {
+		try (SubjectStore store = new SubjectStore("12345.patient", file)) {
 			feed_batch(store);
 			store.dump(os);
 		}
@@ -76,7 +77,7 @@ public class SubjectStore_ {
 		String dump = os.toString();
 		test_dump(dump);
 		InputStream is = new ByteArrayInputStream(dump.getBytes());
-		try (SubjectStore store = new SubjectStore("12345:patient", file)) {
+		try (SubjectStore store = new SubjectStore("12345.patient", file)) {
 			store.restore(is);
 			test_batch(store);
 		}
@@ -90,11 +91,11 @@ public class SubjectStore_ {
 	public void should_store_legacy_values() throws IOException {
 		File file = File.createTempFile("port", ".oss");
 		try (SubjectStore store = new SubjectStore("00000", file)) {
-			store.feed(Legacy, "UN:all-ports")
-					.add("Country", "China")
-					.add("Latitude", 31_219832454L)
-					.add("Longitude", 121_486998052L)
-					.terminate();
+			store.on(Legacy, "UN:all-ports")
+					.put("Country", "China")
+					.put("Latitude", 31_219832454L)
+					.put("Longitude", 121_486998052L)
+					.commit();
 			test_stored_legacy_values(store);
 		}
 		try (SubjectStore store = new SubjectStore("00000", file)) {
@@ -140,11 +141,11 @@ public class SubjectStore_ {
 	public void should_store_features() throws IOException {
 		File file = File.createTempFile("port", ".oss");
 		try (SubjectStore store = new SubjectStore("00000", file)) {
-			store.feed(now, "UN:all-ports")
-					.add("Country", "China")
-					.add("Latitude", 31.219832454)
-					.add("Longitude", 121.486998052)
-					.terminate();
+			store.on(now, "UN:all-ports")
+					.put("Country", "China")
+					.put("Latitude", 31.219832454)
+					.put("Longitude", 121.486998052)
+					.commit();
 			test_stored_features(store);
 		}
 		try (SubjectStore store = new SubjectStore("00000", file)) {
@@ -153,7 +154,7 @@ public class SubjectStore_ {
 	}
 
 	private static void test_stored_features(SubjectStore store) {
-		assertThat(store.id()).isEqualTo("00000");
+		assertThat(store.name()).isEqualTo("00000");
 		assertThat(store.size()).isEqualTo(1);
 		assertThat(store.first()).isEqualTo(now);
 		assertThat(store.last()).isEqualTo(now);
@@ -194,6 +195,7 @@ public class SubjectStore_ {
 	@Test
 	public void should_include_several_subjects() throws SQLException {
 		File file = new File("subjects.oss");
+		if (file.exists()) file.delete();
 		try (Connection connection = SqliteConnection.from(file)) {
 			SubjectStore[] stores = new SubjectStore[]{
 					new SubjectStore("00001", connection),
@@ -210,17 +212,12 @@ public class SubjectStore_ {
 		}
 	}
 
-	@Test
-	public void name() {
-
-	}
-
 	private static void feed_time_series(SubjectStore store) {
 		for (int i = 0; i < 10; i++) {
-			store.feed(today(i), "AIS:movements-" + i)
-					.add("Vessels", 1900 + i * 10)
-					.add("State", categories.substring(i, i + 1))
-					.terminate();
+			store.on(today(i), "AIS:movements-" + i)
+					.put("Vessels", 1900 + i * 10)
+					.put("State", categories.substring(i, i + 1))
+					.commit();
 		}
 	}
 
@@ -234,30 +231,30 @@ public class SubjectStore_ {
 		assertThat(store.numericalQuery("Vessels").get()).isEqualTo(value(9, today(9), 1990.0));
 		assertThat(store.numericalQuery("Vessels").get(today(200), today(300)).isEmpty()).isTrue();
 		assertThat(store.numericalQuery("Vessels").get(today(-200), today(-100)).isEmpty()).isTrue();
-		assertThat(store.numericalQuery("Vessels").getAll().values()).containsExactly(1900L, 1910L, 1920L, 1930L, 1940L, 1950L, 1960L, 1970L, 1980L, 1990L);
-		assertThat(store.categoricalQuery("State").getAll().values()).containsExactly("D", "E", "P", "O", "L", "A", "R", "I", "S", "E");
-		assertThat(store.categoricalQuery("State").getAll().distinct()).containsExactly("D", "E", "P", "O", "L", "A", "R", "I", "S");
+		assertThat(store.numericalQuery("Vessels").all().values()).containsExactly(1900L, 1910L, 1920L, 1930L, 1940L, 1950L, 1960L, 1970L, 1980L, 1990L);
+		assertThat(store.categoricalQuery("State").all().values()).containsExactly("D", "E", "P", "O", "L", "A", "R", "I", "S", "E");
+		assertThat(store.categoricalQuery("State").all().distinct()).containsExactly("D", "E", "P", "O", "L", "A", "R", "I", "S");
 		assertThat(store.categoricalQuery("State").get()).isEqualTo(value(9, today(9), "E"));
 		assertThat(store.categoricalQuery("State").get(today(0), today(10)).summary().mode()).isEqualTo("E");
 	}
 
 	private static void feed_batch(SubjectStore store) {
 		SubjectStore.Batch batch = store.batch();
-		batch.feed(day, "HMG-2")
-				.add("hemoglobin", 145)
-				.terminate();
+		batch.on(day, "HMG-2")
+				.put("hemoglobin", 145)
+				.commit();
 
-		batch.feed(day.plus(-5, DAYS), "HMG-1")
-				.add("hemoglobin", 130)
-				.terminate();
+		batch.on(day.plus(-5, DAYS), "HMG-1")
+				.put("hemoglobin", 130)
+				.commit();
 
-		batch.feed(day.plus(-3, DAYS), "HMG-B")
-				.add("hemoglobin", 115)
-				.terminate();
+		batch.on(day.plus(-3, DAYS), "HMG-B")
+				.put("hemoglobin", 115)
+				.commit();
 
-		batch.feed(day.plus(-20, DAYS), "HMG-L")
-				.add("hemoglobin", 110)
-				.terminate();
+		batch.on(day.plus(-20, DAYS), "HMG-L")
+				.put("hemoglobin", 110)
+				.commit();
 
 		batch.terminate();
 	}
@@ -295,7 +292,7 @@ public class SubjectStore_ {
 
 	private static void test_batch(SubjectStore store) {
 		assertThat(store.type()).startsWith("patient");
-		assertThat(store.id()).isEqualTo("12345");
+		assertThat(store.name()).isEqualTo("12345");
 		assertThat(store.currentNumber("hemoglobin")).isEqualTo(145.0);
 		Point<Double> actual = store.numericalQuery("hemoglobin").get();
 		assertThat(actual.value()).isEqualTo(145);

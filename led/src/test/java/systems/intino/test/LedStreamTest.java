@@ -1,9 +1,9 @@
 package systems.intino.test;
 
-import systems.intino.datamarts.led.LedStream;
-import systems.intino.datamarts.led.allocators.SchemaAllocator;
-import systems.intino.datamarts.led.allocators.stack.StackAllocators;
-import systems.intino.datamarts.led.leds.IteratorLedStream;
+import systems.intino.datamarts.subjectstore.subjects.led.LedStream;
+import systems.intino.datamarts.subjectstore.subjects.led.allocators.SchemaAllocator;
+import systems.intino.datamarts.subjectstore.subjects.led.allocators.stack.StackAllocators;
+import systems.intino.datamarts.subjectstore.subjects.led.leds.IteratorLedStream;
 import systems.intino.test.schemas.TestSchema;
 import systems.intino.test.schemas.Venta;
 import org.junit.Before;

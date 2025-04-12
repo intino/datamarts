@@ -1,10 +1,10 @@
 package systems.intino.test;
 
-import systems.intino.datamarts.led.*;
-import systems.intino.datamarts.led.allocators.SchemaFactory;
-import systems.intino.datamarts.led.buffers.store.ByteBufferStore;
-import systems.intino.datamarts.led.buffers.store.ByteStore;
-import systems.intino.datamarts.led.util.SchemaSerialBuilder;
+import systems.intino.datamarts.subjectstore.subjects.led.*;
+import systems.intino.datamarts.subjectstore.subjects.led.allocators.SchemaFactory;
+import systems.intino.datamarts.subjectstore.subjects.led.buffers.store.ByteBufferStore;
+import systems.intino.datamarts.subjectstore.subjects.led.buffers.store.ByteStore;
+import systems.intino.datamarts.subjectstore.subjects.led.util.SchemaSerialBuilder;
 import org.apache.commons.io.FileUtils;
 import org.junit.AfterClass;
 import org.junit.Assert;

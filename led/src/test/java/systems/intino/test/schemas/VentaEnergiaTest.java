@@ -1,6 +1,6 @@
 package systems.intino.test.schemas;
 
-import systems.intino.datamarts.led.Schema;
+import systems.intino.datamarts.subjectstore.subjects.led.Schema;
 import org.junit.Before;
 import org.junit.Test;
 

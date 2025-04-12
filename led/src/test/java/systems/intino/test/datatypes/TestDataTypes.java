@@ -1,12 +1,12 @@
 package systems.intino.test.datatypes;
 
-import systems.intino.datamarts.led.buffers.AbstractBitBuffer;
-import systems.intino.datamarts.led.buffers.BigEndianBitBuffer;
-import systems.intino.datamarts.led.buffers.LittleEndianBitBuffer;
-import systems.intino.datamarts.led.buffers.store.ByteBufferStore;
-import systems.intino.datamarts.led.buffers.store.ByteStore;
-import systems.intino.datamarts.led.util.memory.MemoryUtils;
-import systems.intino.datamarts.led.util.memory.ModifiableMemoryAddress;
+import systems.intino.datamarts.subjectstore.subjects.led.buffers.AbstractBitBuffer;
+import systems.intino.datamarts.subjectstore.subjects.led.buffers.BigEndianBitBuffer;
+import systems.intino.datamarts.subjectstore.subjects.led.buffers.LittleEndianBitBuffer;
+import systems.intino.datamarts.subjectstore.subjects.led.buffers.store.ByteBufferStore;
+import systems.intino.datamarts.subjectstore.subjects.led.buffers.store.ByteStore;
+import systems.intino.datamarts.subjectstore.subjects.led.util.memory.MemoryUtils;
+import systems.intino.datamarts.subjectstore.subjects.led.util.memory.ModifiableMemoryAddress;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -19,7 +19,7 @@ import java.util.Collection;
 import java.util.List;
 
 import static org.junit.Assert.assertEquals;
-import static systems.intino.datamarts.led.util.BitUtils.maxPossibleNumber;
+import static systems.intino.datamarts.subjectstore.subjects.led.util.BitUtils.maxPossibleNumber;
 import static java.nio.ByteOrder.BIG_ENDIAN;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
 

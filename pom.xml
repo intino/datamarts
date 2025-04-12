@@ -11,7 +11,7 @@
 	<modules>
 		<module>subject-store</module>
 		<module>led</module>
-		<module>zet</module>
+		<module>zet-store</module>
         <module>subject-index</module>
     </modules>
 

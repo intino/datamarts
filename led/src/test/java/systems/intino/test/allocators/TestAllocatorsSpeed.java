@@ -1,12 +1,12 @@
 package systems.intino.test.allocators;
 
-import systems.intino.datamarts.led.Schema;
-import systems.intino.datamarts.led.allocators.DefaultAllocator;
-import systems.intino.datamarts.led.allocators.SchemaAllocator;
-import systems.intino.datamarts.led.allocators.indexed.ArrayAllocator;
-import systems.intino.datamarts.led.allocators.indexed.ListAllocator;
-import systems.intino.datamarts.led.allocators.stack.StackAllocators;
-import systems.intino.datamarts.led.allocators.stack.StackListAllocator;
+import systems.intino.datamarts.subjectstore.subjects.led.Schema;
+import systems.intino.datamarts.subjectstore.subjects.led.allocators.DefaultAllocator;
+import systems.intino.datamarts.subjectstore.subjects.led.allocators.SchemaAllocator;
+import systems.intino.datamarts.subjectstore.subjects.led.allocators.indexed.ArrayAllocator;
+import systems.intino.datamarts.subjectstore.subjects.led.allocators.indexed.ListAllocator;
+import systems.intino.datamarts.subjectstore.subjects.led.allocators.stack.StackAllocators;
+import systems.intino.datamarts.subjectstore.subjects.led.allocators.stack.StackListAllocator;
 import systems.intino.test.schemas.TestSchema;
 import org.junit.Ignore;
 

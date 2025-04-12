@@ -1,14 +1,17 @@
 package test;
 
 import org.junit.Test;
-import systems.intino.alexandria.datamarts.subjectmap.model.Subject;
-import systems.intino.alexandria.datamarts.subjectmap.model.Subjects;
-import systems.intino.alexandria.datamarts.subjectmap.model.Token;
-import systems.intino.alexandria.datamarts.subjectmap.model.Tokens;
+import systems.intino.datamarts.subjectindex.model.Subject;
+import systems.intino.datamarts.subjectindex.model.Subjects;
+import systems.intino.datamarts.subjectindex.model.Token;
+import systems.intino.datamarts.subjectindex.model.Tokens;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -27,10 +30,28 @@ public class Subject_ {
 	}
 
 	@Test
-	public void should_navigate_to_children() {
-		Subject subject = Subject.of(" a.model ", context());
+	public void should_create_children_without_context() {
+		Subject subject = Subject.of("a","model");
+		Subject child = subject.create("b", "release");
+		Subject grandson = child.create("c", "properties");
+
+		assertThat(child.identifier()).isEqualTo("b.release");
+		assertThat(child.parent()).isEqualTo(subject);
+		assertThat(grandson.parent().parent()).isEqualTo(subject);
+	}
+
+	@Test
+	public void should_create_children_with_context() {
+		Subject subject = new Subject(" a.model ", context());
+		Subject child = subject.create("b", "release");
+		Subject grandson = child.create("c", "properties");
+
+		assertThat(child.identifier()).isEqualTo("b.release");
+		assertThat(child.parent()).isEqualTo(subject);
+		assertThat(grandson.parent().parent()).isEqualTo(subject);
+
 		assertThat(subject.children()).containsExactly(Subject.of("a.model/b.release"));
-		assertThat(subject.children().get(0).children().get(0)).isEqualTo(Subject.of("a.model/b.release/b.release"));
+		assertThat(subject.children().get(0).children().get(0)).isEqualTo(Subject.of("a.model/b.release/c.properties"));
 	}
 
 	@Test
@@ -49,14 +70,41 @@ public class Subject_ {
 	}
 
 	private Subject.Context context() {
-		return new Subject.Context(this::childrenOf, this::tokensOf);
+		return new Subject.Context() {
+			@Override
+			public Subjects children(Subject subject) {
+				return new Subjects(childrenOf(subject));
+			}
+
+			@Override
+			public Tokens tokens(Subject subject) {
+				return tokensOf(subject);
+			}
+
+			@Override
+			public Subject.Transaction update(Subject subject) {
+				return null;
+			}
+
+			@Override
+			public Subject create(Subject child) {
+				childrenOf(child.parent()).add(child);
+				return child;
+			}
+
+			@Override
+			public void drop(Subject subject) {
+
+			}
+		};
 	}
 
 	private Tokens tokensOf(Subject subject) {
 		return new Tokens(List.of(new Token("email", "data@gmail.com")));
 	}
 
-	private Subjects childrenOf(Subject subject) {
-		return new Subjects(List.of(Subject.of(subject.path() + "/" + "b.release", subject.context())));
+	private final Map<Subject, List<Subject>> map = new HashMap<>();
+	private List<Subject> childrenOf(Subject subject) {
+		return map.computeIfAbsent(subject, k -> new ArrayList<>());
 	}
 }

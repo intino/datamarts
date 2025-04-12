@@ -1,10 +1,10 @@
 package systems.intino.concurrency;
 
-import systems.intino.datamarts.led.LedStream;
-import systems.intino.datamarts.led.Schema;
-import systems.intino.datamarts.led.UnsortedLedStreamBuilder;
-import systems.intino.datamarts.led.allocators.SchemaFactory;
-import systems.intino.datamarts.led.buffers.store.ByteStore;
+import systems.intino.datamarts.subjectstore.subjects.led.LedStream;
+import systems.intino.datamarts.subjectstore.subjects.led.Schema;
+import systems.intino.datamarts.subjectstore.subjects.led.UnsortedLedStreamBuilder;
+import systems.intino.datamarts.subjectstore.subjects.led.allocators.SchemaFactory;
+import systems.intino.datamarts.subjectstore.subjects.led.buffers.store.ByteStore;
 import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;

@@ -5,12 +5,12 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>systems.intino.datamatarts</groupId>
 	<artifactId>subject-index</artifactId>
-	<name>subject-index</name>
+	<name>subject-tree</name>
 	<version>1.0.0</version>
 	<description>
-		SubjectIndex is a lightweight, embeddable inverted index that maps subject identifiers to sets of tokens. It
+		SubjectTree is a lightweight, embeddable inverted index that maps subject identifiers to sets of tokens. It
 		supports setting and unsetting arbitrary key-value pairs (tokens), and provides conditional search by presence
-		or absence of tokens. SubjectIndex is ideal for use cases where fast token-based tagging and retrieval of subjects
+		or absence of tokens. SubjectTree is ideal for use cases where fast token-based tagging and retrieval of subjects
 		is needed.
 	</description>
 	<url>https://github.com/intino/datamarts</url>

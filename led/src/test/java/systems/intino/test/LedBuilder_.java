@@ -1,7 +1,7 @@
 package systems.intino.test;
 
-import systems.intino.datamarts.led.Led;
-import systems.intino.datamarts.led.LedWriter;
+import systems.intino.datamarts.subjectstore.subjects.led.Led;
+import systems.intino.datamarts.subjectstore.subjects.led.LedWriter;
 import systems.intino.test.schemas.TestSchema;
 import org.junit.After;
 import org.junit.AfterClass;

@@ -1,11 +1,11 @@
 package tests;
 
-import systems.intino.alexandria.datamarts.SubjectView;
-import systems.intino.alexandria.datamarts.SubjectStore;
-import systems.intino.alexandria.datamarts.model.filters.MinMaxNormalizationFilter;
-import systems.intino.alexandria.datamarts.model.filters.RollingAverageFilter;
-import systems.intino.alexandria.datamarts.model.view.Column;
-import systems.intino.alexandria.datamarts.model.view.Format;
+import systems.intino.datamarts.subjectstore.SubjectView;
+import systems.intino.datamarts.subjectstore.SubjectStore;
+import systems.intino.datamarts.subjectstore.model.filters.MinMaxNormalizationFilter;
+import systems.intino.datamarts.subjectstore.model.filters.RollingAverageFilter;
+import systems.intino.datamarts.subjectstore.model.view.Column;
+import systems.intino.datamarts.subjectstore.model.view.Format;
 import org.junit.Test;
 
 import java.io.ByteArrayOutputStream;
@@ -107,16 +107,16 @@ public class SubjectView_ {
 	}
 
 	private void feed(SubjectStore store) {
-		store.feed(from.plus(10, DAYS), "test")
-				.add("temperature", 20)
-				.terminate();
-		store.feed(from.plus(12, DAYS), "test")
-				.add("temperature", 28)
-				.add("sky", "cloudy")
-				.terminate();
-		store.feed(from.plus(28, DAYS), "test")
-				.add("temperature", 18)
-				.add("sky", "rain")
-				.terminate();
+		store.on(from.plus(10, DAYS), "test")
+				.put("temperature", 20)
+				.commit();
+		store.on(from.plus(12, DAYS), "test")
+				.put("temperature", 28)
+				.put("sky", "cloudy")
+				.commit();
+		store.on(from.plus(28, DAYS), "test")
+				.put("temperature", 18)
+				.put("sky", "rain")
+				.commit();
 	}
 }
