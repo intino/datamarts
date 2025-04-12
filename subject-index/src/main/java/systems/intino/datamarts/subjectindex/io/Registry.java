@@ -1,6 +1,9 @@
 package systems.intino.datamarts.subjectindex.io;
 
 import java.io.Closeable;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.List;
 
 public interface Registry extends Closeable {
@@ -22,4 +25,5 @@ public interface Registry extends Closeable {
 	void drop(int subject);
 	void commit();
 
+	void dump(OutputStream is) throws IOException;
 }

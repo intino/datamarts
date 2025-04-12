@@ -206,10 +206,10 @@ public class SqlRegistry implements Registry {
 	}
 
 	private ResultSet selectIdentifier(String identifier) throws SQLException {
-		connection.createStatement().execute("CREATE TABLE IF NOT EXISTS identifiers (id INTEGER PRIMARY KEY AUTOINCREMENT, identifier TEXT UNIQUE)");
-		connection.createStatement().execute("INSERT OR IGNORE INTO identifiers(identifier) VALUES ('" + identifier + "')");
+		connection.createStatement().execute("CREATE TABLE IF NOT EXISTS subjects (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT UNIQUE)");
+		connection.createStatement().execute("INSERT OR IGNORE INTO subjects(name) VALUES ('" + identifier + "')");
 		connection.commit();
-		return connection.createStatement().executeQuery("SELECT id FROM identifiers WHERE identifier = '" + identifier + "'");
+		return connection.createStatement().executeQuery("SELECT id FROM subjects WHERE name = '" + identifier + "'");
 	}
 
 	private ResultSet selectTags() throws SQLException {

@@ -4,6 +4,9 @@ import io.intino.alexandria.logger.Logger;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.Test;
+import systems.intino.dataformats.led.LedReader;
+import systems.intino.dataformats.led.LedStream;
+import systems.intino.dataformats.led.UnsortedLedStreamBuilder;
 
 import java.io.File;
 import java.util.Random;

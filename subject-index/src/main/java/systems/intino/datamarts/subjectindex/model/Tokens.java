@@ -6,17 +6,17 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-public record Tokens(List<Token> tokens) implements Iterable<Token> {
+public record Tokens(List<Token> items) implements Iterable<Token> {
 	public boolean isEmpty() {
-		return tokens.isEmpty();
+		return items.isEmpty();
 	}
 
 	public int size() {
-		return tokens.size();
+		return items.size();
 	}
 
 	public Token get(int index) {
-		return tokens.get(index);
+		return items.get(index);
 	}
 
 	public Values get(String name) {
@@ -31,6 +31,11 @@ public record Tokens(List<Token> tokens) implements Iterable<Token> {
 			}
 
 			@Override
+			public String serialize() {
+				return values.stream().map(Object::toString).collect(Collectors.joining("\n"));
+			}
+
+			@Override
 			public Iterator<String> iterator() {
 				return values.iterator();
 			}
@@ -38,29 +43,31 @@ public record Tokens(List<Token> tokens) implements Iterable<Token> {
 	}
 
 	private List<String> values(Predicate<Token> predicate) {
-		return tokens.stream().filter(predicate).map(Token::value).toList();
+		return items.stream().filter(predicate).map(Token::value).toList();
 	}
 
 	public Tokens filter(Predicate<Token> predicate) {
-		return new Tokens(tokens.stream().filter(predicate).collect(Collectors.toList()));
+		return new Tokens(items.stream().filter(predicate).collect(Collectors.toList()));
 	}
 
 	@Override
 	public Iterator<Token> iterator() {
-		return tokens.iterator();
+		return items.iterator();
 	}
 
 	public Stream<Token> stream() {
-		return tokens.stream();
+		return items.stream();
 	}
 
 	public String serialize() {
-		return tokens.stream()
+		return items.stream()
 				.map(Token::toString)
 				.collect(Collectors.joining("\n"));
 	}
 
 	public interface Values extends Iterable<String> {
 		String first();
+
+		String serialize();
 	}
 }

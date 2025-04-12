@@ -1,0 +1,123 @@
+package systems.intino.datamarts.subjectindex.io.feeders;
+
+import systems.intino.datamarts.subjectindex.io.StatementFeeder;
+import systems.intino.datamarts.subjectindex.model.Statement;
+import systems.intino.datamarts.subjectindex.model.Subject;
+import systems.intino.datamarts.subjectindex.model.Token;
+
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.util.*;
+import java.util.function.Function;
+import java.util.stream.IntStream;
+
+public class TabularDataFeeder implements StatementFeeder {
+	private final BufferedReader reader;
+	private final TabularSchema header;
+
+	public TabularDataFeeder(InputStream is) {
+		reader = new BufferedReader(new InputStreamReader(is));
+		header = new TabularSchema(nextLine());
+	}
+
+	@Override
+	public Schema schema() {
+		return header;
+	}
+
+	@Override
+	public Iterator<Statement> iterator() {
+		return new Iterator<>() {
+			Iterator<Statement> row = nextRow();
+
+			@Override
+			public boolean hasNext() {
+				return row.hasNext();
+			}
+
+			@Override
+			public Statement next() {
+				try {
+					return row.next();
+				} finally {
+					if (!row.hasNext()) row = nextRow();
+				}
+			}
+		};
+	}
+
+	private Iterator<Statement> nextRow() {
+		return header.iterator(nextLine());
+	}
+
+	private String[] nextLine() {
+		try {
+			String line = reader.readLine();
+			if (line != null) return line.split("\t");
+			return new String[0];
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	static class TabularSchema implements Schema {
+		private final String[] fields;
+		private final int id;
+		private final Map<String, Function<String,String>> mappers;
+
+		public TabularSchema(String[] fields) {
+			this.fields = fields;
+			this.id = IntStream.range(0, fields.length).filter(i->fields[i].equals("id")).findFirst().orElse(0);
+			this.mappers = new HashMap<>();
+		}
+
+		@Override
+		public TabularSchema map(String name, Function<String,String> mapper) {
+			mappers.put(name, mapper);
+			return this;
+		}
+
+		private Subject subject(String[] row) {
+			return Subject.of(mapperOf("id").apply(row[this.id]));
+		}
+
+		private Function<String, String> mapperOf(String id) {
+			return mappers.getOrDefault(id, s -> s);
+		}
+
+		private Token[] tokens(String[] values) {
+			return IntStream.range(0, values.length)
+					.filter(i -> i != id)
+					.filter(i -> !values[i].isEmpty())
+					.mapToObj(i -> token(fields[i], mapperOf(fields[i]).apply(values[i])))
+					.filter(Objects::nonNull)
+					.toArray(Token[]::new);
+		}
+
+		private Token token(String field, String value) {
+			return value != null ? new Token(field, value) : null;
+		}
+
+		private Iterator<Statement> iterator(String[] values) {
+			if (values.length == 0) return Collections.emptyIterator();
+			return new Iterator<>() {
+				final Subject subject = subject(values);
+				final Token[] tokens = tokens(values);
+				int i = 0;
+
+				@Override
+				public boolean hasNext() {
+					return i < tokens.length;
+				}
+
+				@Override
+				public Statement next() {
+					return new Statement(subject, tokens[i++]);
+				}
+			};
+		}
+	}
+
+}

@@ -7,35 +7,35 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-public record Subjects(List<Subject> subjects) implements Iterable<Subject> {
+public record Subjects(List<Subject> items) implements Iterable<Subject> {
 
 	public boolean isEmpty() {
-		return subjects.isEmpty();
+		return items.isEmpty();
 	}
 
 	public int size() {
-		return subjects.size();
+		return items.size();
 	}
 
 	public Subject get(int index) {
-		return subjects.get(index);
+		return items.get(index);
 	}
 
 	public Subjects filter(Predicate<Subject> predicate) {
-		return new Subjects(subjects.stream().filter(predicate).toList());
+		return new Subjects(items.stream().filter(predicate).toList());
 	}
 
 	public Stream<Subject> stream() {
-		return subjects.stream();
+		return items.stream();
 	}
 
 	@Override
 	public Iterator<Subject> iterator() {
-		return subjects.iterator();
+		return items.iterator();
 	}
 
 	public String serialize() {
-		return subjects.stream()
+		return items.stream()
 				.filter(Objects::nonNull)
 				.map(Subject::toString)
 				.collect(Collectors.joining("\n"));

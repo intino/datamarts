@@ -1,9 +1,10 @@
 package systems.intino.datamarts.subjectstore.subjects.led;
 
-import systems.intino.datamarts.subjectstore.subjects.led.allocators.DefaultAllocator;
-import systems.intino.datamarts.subjectstore.subjects.led.allocators.SchemaAllocator;
-import systems.intino.datamarts.subjectstore.subjects.led.allocators.SchemaFactory;
-import systems.intino.datamarts.subjectstore.subjects.led.buffers.store.ByteStore;
+import systems.intino.dataformats.led.Schema;
+import systems.intino.dataformats.led.allocators.DefaultAllocator;
+import systems.intino.dataformats.led.allocators.SchemaAllocator;
+import systems.intino.dataformats.led.allocators.SchemaFactory;
+import systems.intino.dataformats.led.buffers.store.ByteStore;
 
 import java.util.UUID;
 

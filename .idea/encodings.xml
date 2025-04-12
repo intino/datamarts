@@ -7,11 +7,15 @@
     <file url="file://$PROJECT_DIR$/src/main/resources" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/subject-index/src/main/java" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/subject-index/src/main/resources" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/subject-spaces/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/subject-spaces/src/main/resources" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/subject-store/src/main/java" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/subject-store/src/main/resources" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/subject-trellis/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/subject-trellis/src/main/resources" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/subjects/src/main/java" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/subjects/src/main/resources" charset="UTF-8" />
-    <file url="file://$PROJECT_DIR$/zet-store/src/main/java" charset="UTF-8" />
-    <file url="file://$PROJECT_DIR$/zet-store/src/main/resources" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/zet/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/zet/src/main/resources" charset="UTF-8" />
   </component>
 </project>

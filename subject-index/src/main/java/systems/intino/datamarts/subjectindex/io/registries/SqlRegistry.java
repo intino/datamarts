@@ -2,6 +2,7 @@ package systems.intino.datamarts.subjectindex.io.registries;
 
 import systems.intino.datamarts.subjectindex.io.Registry;
 
+import java.io.*;
 import java.sql.*;
 import java.util.*;
 import java.util.function.IntPredicate;
@@ -109,6 +110,28 @@ public class SqlRegistry implements Registry {
 	public void commit() {
 		try {
 			connection.commit();
+		} catch (SQLException e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	private static final String DumpSql = """
+            SELECT subjects.name AS name, tokens.name AS token
+            FROM links
+            JOIN subjects ON subjects.id = links.subject_id
+            JOIN tokens ON tokens.id = links.token_id
+            WHERE subjects.name IS NOT NULL AND tokens.name IS NOT NULL
+            ORDER BY subjects.id
+        """;
+
+	@Override
+	public void dump(OutputStream os) throws IOException {
+		try (ResultSet rs = connection.createStatement().executeQuery(DumpSql)) {
+			while (rs.next()) {
+				String subject = rs.getString(1);
+				String token = rs.getString(2);
+				os.write((subject + "\t" + token + "\n").getBytes());
+			}
 		} catch (SQLException e) {
 			throw new RuntimeException(e);
 		}

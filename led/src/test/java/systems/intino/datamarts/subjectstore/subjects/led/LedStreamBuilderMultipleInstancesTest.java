@@ -1,6 +1,7 @@
 package systems.intino.datamarts.subjectstore.subjects.led;
 
-import systems.intino.test.schemas.TestSchema;
+import systems.intino.dataformats.led.LedStream;
+import tests.schemas.TestSchema;
 import org.junit.Ignore;
 import org.junit.Test;
 

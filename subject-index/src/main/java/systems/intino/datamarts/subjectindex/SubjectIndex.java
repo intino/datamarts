@@ -1,17 +1,13 @@
 package systems.intino.datamarts.subjectindex;
 
 import systems.intino.datamarts.subjectindex.io.Registry;
+import systems.intino.datamarts.subjectindex.io.StatementFeeder;
 import systems.intino.datamarts.subjectindex.io.registries.SqlRegistry;
 import systems.intino.datamarts.subjectindex.io.registries.SqliteConnection;
-import systems.intino.datamarts.subjectindex.model.Subject;
+import systems.intino.datamarts.subjectindex.model.*;
 import systems.intino.datamarts.subjectindex.model.Subject.Transaction;
-import systems.intino.datamarts.subjectindex.model.Subjects;
-import systems.intino.datamarts.subjectindex.model.Token;
-import systems.intino.datamarts.subjectindex.model.Tokens;
 
-import java.io.Closeable;
-import java.io.File;
-import java.io.IOException;
+import java.io.*;
 import java.sql.Connection;
 import java.util.*;
 import java.util.function.Function;
@@ -66,48 +62,41 @@ public class SubjectIndex implements Closeable {
 		return subjects(Any);
 	}
 
-	public SubjectQuery subjects(String type) {
+	public SubjectQuery subjects(String... types) {
+		return subjects(setOf(types));
+	}
+
+	public SubjectQuery subjects(Set<String> types) {
 		return new SubjectQuery() {
 
 			@Override
 			public Subjects all() {
-				return subjectFilter(type).all();
+				return subjectFilter(types).all();
 			}
 
 			@Override
 			public Subjects roots() {
-				return subjectFilter(type).roots();
+				return subjectFilter(types).roots();
 			}
 
 			@Override
 			public AttributeFilter where(String... keys) {
-				return attributeFilter(type, Set.of(keys));
-			}
-
-			@Override
-			public CollectMap collect(String key) {
-				return collectMap(type, key);
+				return attributeFilter(types, Set.of(keys));
 			}
 
 			@Override
 			public SubjectFilter with(String key, String value) {
-				return subjectFilter(type).with(key, value);
+				return subjectFilter(types).with(key, value);
 			}
 
 			@Override
 			public SubjectFilter without(String key, String value) {
-				return subjectFilter(type).without(key, value);
+				return subjectFilter(types).without(key, value);
 			}
-		};
-	}
+		};	}
 
-	private CollectMap collectMap(String type, String key) {
-		return new CollectMap() {
-			@Override
-			public Map<Subject, String> toMap() {
-				return Map.of();
-			}
-		};
+	private Set<String> setOf(String[] types) {
+		return Set.of(types);
 	}
 
 	public Subject create(String name, String type) {
@@ -178,9 +167,9 @@ public class SubjectIndex implements Closeable {
 		subjects.remove(subject);
 	}
 
-	private SubjectFilter subjectFilter(String type) {
+	private SubjectFilter subjectFilter(Set<String> types) {
 		return new SubjectFilter() {
-			private final List<Integer> candidates = subjectsWith(type);
+			private final List<Integer> candidates = subjectsWith(types);
 			private final List<Integer> condition = new ArrayList<>();
 
 			@Override
@@ -215,9 +204,9 @@ public class SubjectIndex implements Closeable {
 		};
 	}
 
-	private AttributeFilter attributeFilter(String type, Set<String> keys) {
+	private AttributeFilter attributeFilter(Set<String> types, Set<String> keys) {
 		return new AttributeFilter() {
-			private final List<Integer> candidates = subjectsWith(type);
+			private final List<Integer> candidates = subjectsWith(types);
 
 			@Override
 			public Subjects contains(String value) {
@@ -273,6 +262,63 @@ public class SubjectIndex implements Closeable {
 		};
 	}
 
+	public static final double nullThresholdRatio = 0.20;
+	public boolean isFragmented() {
+		return subjects.nullRatio() > nullThresholdRatio || tokens.nullRatio() > nullThresholdRatio;
+	}
+
+	public void copyTo(SubjectIndex subjectIndex) {
+		try {
+			PipedOutputStream out = new PipedOutputStream();
+			PipedInputStream in = new PipedInputStream(out);
+
+			Thread writer = dumpOn(out);
+			writer.start();
+			subjectIndex.restore(in);
+			writer.join();
+
+		} catch (IOException | InterruptedException e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	private Thread dumpOn(PipedOutputStream out) {
+		return new Thread(() -> {
+			try (OutputStream os = out) {
+				this.dump(os);
+			} catch (IOException e) {
+				throw new RuntimeException("Error during dump", e);
+			}
+		});
+	}
+
+	public SubjectIndex consume(StatementFeeder statementFeeder) {
+		Batch batch = batch();
+		for (Statement statement : statementFeeder) {
+			batch.register(statement.subject(), statement.token());
+		}
+		batch.commit();
+		return this;
+	}
+
+	public SubjectIndex restore(InputStream is) throws IOException {
+		try (BufferedReader reader = new BufferedReader(new InputStreamReader(is))) {
+			Batch batch = batch();
+			while (true) {
+				String line = reader.readLine();
+				if (line == null) break;
+				String[] split = line.split("\t");
+				batch.register(split[0], split[1]);
+			}
+			batch.commit();
+			return this;
+		}
+	}
+
+	public void dump(OutputStream os) throws IOException {
+		registry.dump(os);
+	}
+
 	@Override
 	public void close() throws IOException {
 		registry.close();
@@ -311,11 +357,19 @@ public class SubjectIndex implements Closeable {
 		};
 	}
 
-	private List<Integer> subjectsWith(String type) {
+	private List<Integer> subjectsWith(Set<String> types) {
+		return subjectsWith(predicateFor(types));
+	}
+
+	private List<Integer> subjectsWith(Predicate<Subject> predicate) {
 		return subjects.stream()
-				.filter(s -> s.is(type))
+				.filter(predicate)
 				.map(subjects::id)
 				.toList();
+	}
+
+	private Predicate<Subject> predicateFor(Set<String> types) {
+		return types.contains(Any) ? s->true : s -> types.contains(s.type());
 	}
 
 	private final Map<String, Pattern> patterns = new HashMap<>();
@@ -346,13 +400,40 @@ public class SubjectIndex implements Closeable {
 		return tokens.stream().map(this.tokens::get);
 	}
 
+	public Batch batch() {
+		return new Batch() {
+			@Override
+			public void register(Subject subject, Token token) {
+				int subjectId = subjects.add(subject);
+				int tokenId = tokens.add(token);
+				registry.link(subjectId, tokenId);
+			}
+
+			@Override
+			public void commit() {
+				registry.commit();
+			}
+
+
+		};
+	}
+
+	public interface Batch {
+
+		default void register(String subject, String token) {
+			register(Subject.of(subject), Token.of(token));
+		}
+
+		void register(Subject subject, Token token);
+		void commit();
+	}
+
 	public interface SubjectQuery {
 		Subjects all();
 		Subjects roots();
 		SubjectFilter with(String key, String value);
 		SubjectFilter without(String key, String value);
 		AttributeFilter where(String... keys);
-		CollectMap collect(String key);
 	}
 
 	public interface SubjectFilter {
@@ -374,10 +455,6 @@ public class SubjectIndex implements Closeable {
 	public interface AttributeFilter {
 		Subjects contains(String value);
 		Subjects matches(String value);
-	}
-
-	public interface CollectMap {
-		Map<Subject, String> toMap();
 	}
 
 	private static class Lookup<T> {
@@ -444,6 +521,14 @@ public class SubjectIndex implements Closeable {
 
 		public boolean contains(int id) {
 			return id <= list.size();
+		}
+
+		public double nullRatio() {
+			return list.size() > 20 ? (double) nullItems() / list.size() : 0;
+		}
+
+		private long nullItems() {
+			return list.stream().filter(Objects::isNull).count();
 		}
 	}
 

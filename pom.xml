@@ -9,10 +9,10 @@
 	<version>1.0.0</version>
 	<packaging>pom</packaging>
 	<modules>
+		<module>subject-index</module>
 		<module>subject-store</module>
 		<module>led</module>
-		<module>zet-store</module>
-        <module>subject-index</module>
+		<module>zet</module>
     </modules>
 
 	<developers>

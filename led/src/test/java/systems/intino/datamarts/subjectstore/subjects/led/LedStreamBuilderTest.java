@@ -2,7 +2,8 @@ package systems.intino.datamarts.subjectstore.subjects.led;
 
 import io.intino.alexandria.logger.Logger;
 import org.junit.Test;
-import systems.intino.test.schemas.TestSchema;
+import systems.intino.dataformats.led.LedStream;
+import tests.schemas.TestSchema;
 
 import java.io.File;
 import java.util.Random;
