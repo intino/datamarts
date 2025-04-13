@@ -7,6 +7,7 @@ import systems.intino.datamarts.subjectindex.model.Statement;
 import systems.intino.datamarts.subjectindex.view.Column;
 
 import java.util.*;
+import java.util.stream.Stream;
 
 public class SubjectIndexView implements Iterable<Column>  {
 	private final Subjects subjects;
@@ -25,9 +26,9 @@ public class SubjectIndexView implements Iterable<Column>  {
 		return statements(subjects.get(index));
 	}
 
-	public Statement get(int index, String key) {
+	public Statement[] get(int index, String key) {
 		Subject subject = subjects.get(index);
-		return statement(subject, key);
+		return statements(subject, key).toArray(Statement[]::new);
 	}
 
 	public int size() {
@@ -42,9 +43,10 @@ public class SubjectIndexView implements Iterable<Column>  {
 		return new Column(name, valuesOf(name));
 	}
 
-	private String[] valuesOf(String name) {
+	private String[] valuesOf(String key) {
 		return subjects.stream()
-				.map(s-> statement(s, name).token().value())
+				.flatMap(s-> statements(s, key))
+				.map(s->s.token().value())
 				.toArray(String[]::new);
 	}
 
@@ -67,12 +69,14 @@ public class SubjectIndexView implements Iterable<Column>  {
 
 	private Statement[] statements(Subject subject) {
 		return keys.stream()
-				.map(s -> statement(subject, s))
+				.flatMap(s -> statements(subject, s))
 				.toArray(Statement[]::new);
 	}
 
-	private Statement statement(Subject subject, String key) {
-		return new Statement(subject, key, tokensOf(subject).get(key).serialize());
+	private Stream<Statement> statements(Subject subject, String key) {
+		return tokensOf(subject).stream()
+				.filter(t->t.is(key))
+				.map(t->new Statement(subject, t));
 	}
 
 	private final Map<Subject, Tokens> tokens = new HashMap<>();

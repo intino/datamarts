@@ -31,7 +31,7 @@ public class Subject_ {
 
 	@Test
 	public void should_create_children_without_context() {
-		Subject subject = Subject.of("a","model");
+		Subject subject = new Subject("a", "model");
 		Subject child = subject.create("b", "release");
 		Subject grandson = child.create("c", "properties");
 

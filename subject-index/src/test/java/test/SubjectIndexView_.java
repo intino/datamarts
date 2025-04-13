@@ -4,6 +4,7 @@ import org.junit.Test;
 import systems.intino.datamarts.subjectindex.SubjectIndex;
 import systems.intino.datamarts.subjectindex.SubjectIndexView;
 import systems.intino.datamarts.subjectindex.io.StatementFeeder;
+import systems.intino.datamarts.subjectindex.io.feeders.TabularDataFeeder;
 import systems.intino.datamarts.subjectindex.model.Subject;
 import systems.intino.datamarts.subjectindex.model.Subjects;
 import systems.intino.datamarts.subjectindex.view.Column;
@@ -54,20 +55,21 @@ public class SubjectIndexView_ {
 					.build();
 			for (Column column : view) {
 				Summary summary = column.summary();
-				List<Subject> all = new ArrayList<>(index.subjects("port").all().items());
+				SubjectIndex.SubjectQuery subjects = index.subjects("port");
+				List<Subject> all = new ArrayList<>(subjects.all().items());
 				for (String category : summary.categories()) {
-					if (category.equals("N/A")) continue;
-					Subjects subjects = index.subjects("port").with(column.name(), category).all();
-					all.removeAll(subjects.items());
-					assertThat(summary.frequency(category)).isEqualTo(subjects.size());
+					Subjects x = subjects.with(column.name(), category).all();
+					all.removeAll(x.items());
+					assertThat(summary.frequency(category)).isEqualTo(x.size());
 				}
-				assertThat(summary.frequency("N/A")).isEqualTo(all.size());
+				assertThat(all.size()).isNotEqualTo(0);
 			}
 		}
 	}
 
 	private StatementFeeder feeder() {
-		StatementFeeder feeder = StatementFeeder.fromTabularData(inputStream("ports.tsv"));
+		InputStream is = inputStream("ports.tsv");
+		StatementFeeder feeder = new TabularDataFeeder(is, "\t");
 		feeder.schema()
 				.map("id", s-> s + ".port")
 				.map("latitude", s-> null)

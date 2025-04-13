@@ -2,10 +2,10 @@ package systems.intino.datamarts.subjectindex.io.registries;
 
 import systems.intino.datamarts.subjectindex.io.Registry;
 
-import java.io.*;
 import java.sql.*;
 import java.util.*;
 import java.util.function.IntPredicate;
+import java.util.stream.Stream;
 
 public class SqlRegistry implements Registry {
 	private final Connection connection;
@@ -115,23 +115,35 @@ public class SqlRegistry implements Registry {
 		}
 	}
 
-	private static final String DumpSql = """
-            SELECT subjects.name AS name, tokens.name AS token
-            FROM links
-            JOIN subjects ON subjects.id = links.subject_id
-            JOIN tokens ON tokens.id = links.token_id
-            WHERE subjects.name IS NOT NULL AND tokens.name IS NOT NULL
-            ORDER BY subjects.id
-        """;
 
 	@Override
-	public void dump(OutputStream os) throws IOException {
-		try (ResultSet rs = connection.createStatement().executeQuery(DumpSql)) {
-			while (rs.next()) {
-				String subject = rs.getString(1);
-				String token = rs.getString(2);
-				os.write((subject + "\t" + token + "\n").getBytes());
-			}
+	public Stream<String> dump() {
+		try {
+			ResultSet rs = statementProvider.get("select-statements").executeQuery();
+			return streamOf(rs);
+		} catch (SQLException e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	private static Stream<String> streamOf(ResultSet rs) {
+		return Stream.generate(() -> readFrom(rs))
+				.takeWhile(Objects::nonNull)
+				.onClose(() -> close(rs));
+	}
+
+	private static String readFrom(ResultSet rs) {
+		try {
+			return rs.next() ? rs.getString(1) + "\t" + rs.getString(2) : null;
+		} catch (SQLException e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	private static void close(ResultSet rs) {
+		try {
+			rs.getStatement().close();
+			rs.close();
 		} catch (SQLException e) {
 			throw new RuntimeException(e);
 		}
@@ -281,6 +293,14 @@ public class SqlRegistry implements Registry {
 	}
 
 	private class StatementProvider {
+		private static final String SelectStatementSQL = """
+            SELECT subjects.name AS name, tokens.name AS token
+            FROM links
+            JOIN subjects ON subjects.id = links.subject_id
+            JOIN tokens ON tokens.id = links.token_id
+            WHERE subjects.name IS NOT NULL AND tokens.name IS NOT NULL
+            ORDER BY subjects.id
+        """;
 
 		final Map<String, PreparedStatement> statements;
 
@@ -292,6 +312,7 @@ public class SqlRegistry implements Registry {
 			Map<String, PreparedStatement> statements = new HashMap<>();
 			statements.put("select-subject", create("SELECT name FROM subjects ORDER BY id"));
 			statements.put("select-tokens", create("SELECT name FROM tokens ORDER BY id"));
+			statements.put("select-statements", create(SelectStatementSQL));
 			statements.put("get-subject-tokens", create("SELECT token_id FROM links WHERE subject_id = ?"));
 			statements.put("get-exclusive-subject-tokens", create("SELECT id FROM tokens WHERE name IS NOT NULL AND id IN (SELECT token_id FROM links WHERE subject_id = ? AND token_id NOT IN (SELECT token_id FROM links WHERE subject_id != ?))"));
 			statements.put("insert-subject", create("INSERT INTO subjects (name) VALUES (?)"));

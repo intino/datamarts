@@ -13,13 +13,15 @@ import java.util.*;
 import java.util.function.Function;
 import java.util.stream.IntStream;
 
-public class TabularDataFeeder implements StatementFeeder {
+public class TabularDataFeeder implements StatementFeeder, AutoCloseable {
 	private final BufferedReader reader;
 	private final TabularSchema header;
+	private final String separator;
 
-	public TabularDataFeeder(InputStream is) {
-		reader = new BufferedReader(new InputStreamReader(is));
-		header = new TabularSchema(nextLine());
+	public TabularDataFeeder(InputStream is, String separator) {
+		this.reader = new BufferedReader(new InputStreamReader(is));
+		this.separator = separator;
+		this.header = new TabularSchema(nextLine());
 	}
 
 	@Override
@@ -49,17 +51,21 @@ public class TabularDataFeeder implements StatementFeeder {
 	}
 
 	private Iterator<Statement> nextRow() {
-		return header.iterator(nextLine());
+		return header.statementsIn(nextLine());
 	}
 
 	private String[] nextLine() {
 		try {
 			String line = reader.readLine();
-			if (line != null) return line.split("\t");
-			return new String[0];
+			return line != null ? line.split(separator) : new String[0];
 		} catch (IOException e) {
 			throw new RuntimeException(e);
 		}
+	}
+
+	@Override
+	public void close() throws IOException {
+		reader.close();
 	}
 
 	static class TabularSchema implements Schema {
@@ -100,7 +106,7 @@ public class TabularDataFeeder implements StatementFeeder {
 			return value != null ? new Token(field, value) : null;
 		}
 
-		private Iterator<Statement> iterator(String[] values) {
+		private Iterator<Statement> statementsIn(String[] values) {
 			if (values.length == 0) return Collections.emptyIterator();
 			return new Iterator<>() {
 				final Subject subject = subject(values);

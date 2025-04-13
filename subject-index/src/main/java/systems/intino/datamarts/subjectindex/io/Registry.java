@@ -1,14 +1,13 @@
 package systems.intino.datamarts.subjectindex.io;
 
 import java.io.Closeable;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.util.List;
+import java.util.stream.Stream;
 
 public interface Registry extends Closeable {
 	List<String> subjects();
 	List<String> tokens();
+	Stream<String> dump();
 
 	List<Integer> tokensOf(int subject);
 	List<Integer> exclusiveTokensOf(int subject);
@@ -21,9 +20,8 @@ public interface Registry extends Closeable {
 
 	void link(int subject, int token);
 	void unlink(int subject, int token);
-
 	void drop(int subject);
+
 	void commit();
 
-	void dump(OutputStream is) throws IOException;
 }

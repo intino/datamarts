@@ -69,14 +69,10 @@ public class Summary {
 
 		public Summary calculate(String[] values) {
 			for (String value : values) {
-				frequencies.merge(wrap(value), 1, Integer::sum);
+				frequencies.merge(value, 1, Integer::sum);
 				count++;
 			}
 			return new Summary(count, frequencies);
-		}
-
-		private String wrap(String value) {
-			return value.isEmpty() ? "N/A" : value;
 		}
 	}
 }

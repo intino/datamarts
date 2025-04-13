@@ -3,9 +3,15 @@ package systems.intino.datamarts.subjectindex.model;
 import java.util.List;
 import java.util.Objects;
 
+import static systems.intino.datamarts.subjectindex.model.Subject.Context.Null;
+
 public record Subject(String path, Context context) {
 	public static final String Any = "*";
-	public static final Context Null = nullContext();
+
+	public static Subject of(String path) {
+		if (path == null) return null;
+		return new Subject(path);
+	}
 
 	public Subject {
 		path = path != null ? path.trim() : "";
@@ -16,20 +22,20 @@ public record Subject(String path, Context context) {
 		this(subject.path, context);
 	}
 
-	public static Subject of(String path) {
-		return path != null ? new Subject(path, null) : null;
+	public Subject(String path) {
+		this(path, Null);
 	}
 
-	public static Subject of(String name, String type) {
-		return of(name + "." + type);
+	public Subject(String name, String type) {
+		this(name + "." + type, Null);
 	}
 
-	public static Subject of(Subject subject, String name, String type) {
-		return of(subject, name + "." + type);
+	public Subject(Subject parent, String identifier) {
+		this(parent.path() + "/" + identifier, parent.context());
 	}
 
-	public static Subject of(Subject subject, String identifier) {
-		return of(subject.path() + "/" + identifier);
+	public Subject(Subject parent, String name, String type) {
+		this(parent, name + "." + type);
 	}
 
 	public String identifier() {
@@ -71,8 +77,8 @@ public record Subject(String path, Context context) {
 	}
 
 	public Subject create(String name, String type) {
-		Subject child = Subject.of(this, name, type);
-		return context != null ? context.create(new Subject(child, context)) : child;
+		Subject child = new Subject(this, name, type);
+		return context != null ? context.create(child) : child;
 	}
 
 	public Transaction update() {
@@ -86,8 +92,8 @@ public record Subject(String path, Context context) {
 	}
 
 	private void checkIfContextExists() {
-		if (context == Null)
-			System.err.println("Context is not defined for '" + path + "'");
+		if (context != Null) return;
+		System.err.println("Context is not defined for '" + path + "'");
 	}
 
 	public boolean is(String type) {
@@ -124,6 +130,7 @@ public record Subject(String path, Context context) {
 
 
 	public interface Context {
+		Context Null = nullContext();
 		Subjects children(Subject subject);
 		Tokens tokens(Subject subject);
 
@@ -133,6 +140,9 @@ public record Subject(String path, Context context) {
 	}
 
 	public interface Transaction {
+		Transaction Null = nullTransaction();
+
+
 		Transaction rename(String identifier);
 
 		Transaction set(Token token);
@@ -167,7 +177,7 @@ public record Subject(String path, Context context) {
 
 			@Override
 			public Transaction update(Subject subject) {
-				return null;
+				return Transaction.Null;
 			}
 
 			@Override
@@ -181,4 +191,39 @@ public record Subject(String path, Context context) {
 			}
 		};
 	}
+
+	private static Transaction nullTransaction() {
+		return new Transaction() {
+			@Override
+			public Transaction rename(String identifier) {
+				return this;
+			}
+
+			@Override
+			public Transaction set(Token token) {
+				return this;
+			}
+
+			@Override
+			public Transaction put(Token token) {
+				return this;
+			}
+
+			@Override
+			public Transaction del(Token token) {
+				return this;
+			}
+
+			@Override
+			public Transaction del(String key) {
+				return this;
+			}
+
+			@Override
+			public void commit() {
+
+			}
+		};
+	}
+
 }

@@ -2,6 +2,7 @@ package systems.intino.datamarts.subjectindex;
 
 import systems.intino.datamarts.subjectindex.io.Registry;
 import systems.intino.datamarts.subjectindex.io.StatementFeeder;
+import systems.intino.datamarts.subjectindex.io.feeders.RawStatementFeeder;
 import systems.intino.datamarts.subjectindex.io.registries.SqlRegistry;
 import systems.intino.datamarts.subjectindex.io.registries.SqliteConnection;
 import systems.intino.datamarts.subjectindex.model.*;
@@ -39,7 +40,7 @@ public class SubjectIndex implements Closeable {
 	}
 
 	public Subject get(String name, String type) {
-		return get(Subject.of(name, type));
+		return get(new Subject(name, type));
 	}
 
 	public Subject get(String path) {
@@ -100,11 +101,15 @@ public class SubjectIndex implements Closeable {
 	}
 
 	public Subject create(String name, String type) {
-		return create(Subject.of(name, type).path());
+		return create(new Subject(name, type));
 	}
 
 	public Subject create(String path) {
-		int id = subjects.add(Subject.of(path));
+		return create(Subject.of(path));
+	}
+
+	private Subject create(Subject subject) {
+		int id = subjects.add(subject);
 		registry.commit();
 		return get(id);
 	}
@@ -267,56 +272,40 @@ public class SubjectIndex implements Closeable {
 		return subjects.nullRatio() > nullThresholdRatio || tokens.nullRatio() > nullThresholdRatio;
 	}
 
-	public void copyTo(SubjectIndex subjectIndex) {
-		try {
-			PipedOutputStream out = new PipedOutputStream();
-			PipedInputStream in = new PipedInputStream(out);
-
-			Thread writer = dumpOn(out);
-			writer.start();
-			subjectIndex.restore(in);
-			writer.join();
-
-		} catch (IOException | InterruptedException e) {
-			throw new RuntimeException(e);
-		}
-	}
-
-	private Thread dumpOn(PipedOutputStream out) {
-		return new Thread(() -> {
-			try (OutputStream os = out) {
-				this.dump(os);
-			} catch (IOException e) {
-				throw new RuntimeException("Error during dump", e);
-			}
-		});
+	public StatementFeeder statementFeeder() {
+		return this::stamentIterator;
 	}
 
 	public SubjectIndex consume(StatementFeeder statementFeeder) {
 		Batch batch = batch();
-		for (Statement statement : statementFeeder) {
-			batch.register(statement.subject(), statement.token());
-		}
+		for (Statement statement : statementFeeder)
+			batch.register(statement);
 		batch.commit();
 		return this;
 	}
 
-	public SubjectIndex restore(InputStream is) throws IOException {
-		try (BufferedReader reader = new BufferedReader(new InputStreamReader(is))) {
-			Batch batch = batch();
-			while (true) {
-				String line = reader.readLine();
-				if (line == null) break;
-				String[] split = line.split("\t");
-				batch.register(split[0], split[1]);
-			}
-			batch.commit();
-			return this;
-		}
+	public void copyTo(SubjectIndex subjectIndex) {
+		subjectIndex.consume(this.statementFeeder());
 	}
 
-	public void dump(OutputStream os) throws IOException {
-		registry.dump(os);
+	public void dump(OutputStream os) {
+		registry.dump().forEach(s->write(s + '\n', os));
+	}
+
+	public SubjectIndex restore(InputStream is) {
+		return consume(new RawStatementFeeder(is));
+	}
+
+	private Iterator<Statement> stamentIterator() {
+		return registry.dump().map(Statement::new).iterator();
+	}
+
+	private void write(String str, OutputStream os) {
+		try {
+			os.write(str.getBytes());
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
 	}
 
 	@Override
@@ -413,15 +402,13 @@ public class SubjectIndex implements Closeable {
 			public void commit() {
 				registry.commit();
 			}
-
-
 		};
 	}
 
 	public interface Batch {
 
-		default void register(String subject, String token) {
-			register(Subject.of(subject), Token.of(token));
+		default void register(Statement statement) {
+			register(statement.subject(), statement.token());
 		}
 
 		void register(Subject subject, Token token);
